@@ -42,19 +42,8 @@ ENV/
 logs/
 *.log
 
-# Configuration files (user-specific)
-*.json
-!package.json
-!package-lock.json
-
-# But keep example configs
-!*.example.json
-
-# User data
-.config/
-*.db
-*.sqlite
-*.sqlite3
+# User configuration files (stored in user home directory, not in repo)
+# These are created at runtime in ~/.modbus_tester/
 
 # Windows
 Thumbs.db
