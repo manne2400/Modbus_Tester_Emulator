@@ -18,6 +18,18 @@ class DataTable(QTableWidget):
         self.setAlternatingRowColors(True)
         self.setEditTriggers(QTableWidget.EditTrigger.DoubleClicked)
         self.verticalHeader().setVisible(False)
+        self.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.setShowGrid(True)
+        
+        # Set column widths
+        header = self.horizontalHeader()
+        header.setStretchLastSection(True)
+        self.setColumnWidth(0, 80)   # Adresse
+        self.setColumnWidth(1, 150)  # Navn
+        self.setColumnWidth(2, 100)  # Rå værdi
+        self.setColumnWidth(3, 120)  # Skaleret værdi
+        self.setColumnWidth(4, 80)   # Enhed
+        # Status column stretches
     
     def update_data(self, result: PollResult):
         """Update table with poll result"""

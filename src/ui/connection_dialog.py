@@ -17,6 +17,7 @@ class ConnectionDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Forbindelsesprofil" if not profile else "Rediger forbindelsesprofil")
         self.setModal(True)
+        self.setMinimumWidth(500)
         self.profile = profile
         
         self._setup_ui()

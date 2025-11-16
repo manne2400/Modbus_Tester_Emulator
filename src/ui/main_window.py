@@ -4,12 +4,14 @@ from PyQt6.QtWidgets import (
     QMenuBar, QMenu, QToolBar, QStatusBar, QTabWidget, QMessageBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QIcon, QFont
 from pathlib import Path
 from src.ui.widgets.connection_tree import ConnectionTree
 from src.ui.log_viewer import LogViewer
 from src.ui.connection_dialog import ConnectionDialog
 from src.ui.session_tab import SessionTab
+from src.ui.about_dialog import AboutDialog
+from src.ui.help_dialog import HelpDialog
 from src.storage.config_manager import ConfigManager
 from src.storage.project_manager import ProjectManager
 from src.application.session_manager import SessionManager
@@ -29,6 +31,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Modbus Tester")
         self.setGeometry(100, 100, 1400, 800)
+        
+        # Apply professional styling
+        self._apply_styling()
         
         # Initialize managers
         self.config_manager = ConfigManager()
@@ -153,19 +158,186 @@ class MainWindow(QMainWindow):
         self.show_log_action.setChecked(False)
         self.show_log_action.triggered.connect(self._toggle_log_viewer)
         view_menu.addAction(self.show_log_action)
+        
+        # Help menu
+        help_menu = menubar.addMenu("Hjælp")
+        
+        help_action = QAction("Brugervejledning", self)
+        help_action.triggered.connect(self._show_help)
+        help_menu.addAction(help_action)
+        
+        help_menu.addSeparator()
+        
+        about_action = QAction("Om Modbus Tester", self)
+        about_action.triggered.connect(self._show_about)
+        help_menu.addAction(about_action)
     
     def _create_toolbar(self):
         """Create toolbar"""
-        toolbar = QToolBar()
+        toolbar = QToolBar("Hovedværktøjslinje")
+        toolbar.setMovable(False)
         self.addToolBar(toolbar)
         
         new_connection_action = QAction("Ny forbindelse", self)
         new_connection_action.triggered.connect(self._on_new_connection)
         toolbar.addAction(new_connection_action)
         
+        toolbar.addSeparator()
+        
         new_session_action = QAction("Ny session", self)
         new_session_action.triggered.connect(self._on_new_session)
         toolbar.addAction(new_session_action)
+    
+    def _apply_styling(self):
+        """Apply professional styling to the application"""
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #f5f5f5;
+            }
+            QMenuBar {
+                background-color: #ffffff;
+                border-bottom: 1px solid #d0d0d0;
+                padding: 2px;
+            }
+            QMenuBar::item {
+                background-color: transparent;
+                padding: 4px 8px;
+                border-radius: 3px;
+            }
+            QMenuBar::item:selected {
+                background-color: #e0e0e0;
+            }
+            QMenuBar::item:pressed {
+                background-color: #d0d0d0;
+            }
+            QToolBar {
+                background-color: #ffffff;
+                border: none;
+                border-bottom: 1px solid #d0d0d0;
+                spacing: 3px;
+                padding: 3px;
+            }
+            QToolBar::separator {
+                background-color: #d0d0d0;
+                width: 1px;
+                margin: 3px;
+            }
+            QStatusBar {
+                background-color: #ffffff;
+                border-top: 1px solid #d0d0d0;
+            }
+            QTabWidget::pane {
+                border: 1px solid #d0d0d0;
+                background-color: #ffffff;
+                border-radius: 3px;
+            }
+            QTabBar::tab {
+                background-color: #e8e8e8;
+                color: #333333;
+                padding: 6px 12px;
+                margin-right: 2px;
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
+            }
+            QTabBar::tab:selected {
+                background-color: #ffffff;
+                border-bottom: 2px solid #0078d4;
+            }
+            QTabBar::tab:hover {
+                background-color: #f0f0f0;
+            }
+            QPushButton {
+                background-color: #0078d4;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                border-radius: 3px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #106ebe;
+            }
+            QPushButton:pressed {
+                background-color: #005a9e;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+            QTreeWidget {
+                background-color: #ffffff;
+                border: 1px solid #d0d0d0;
+                border-radius: 3px;
+                alternate-background-color: #f8f8f8;
+            }
+            QTreeWidget::item {
+                padding: 3px;
+            }
+            QTreeWidget::item:selected {
+                background-color: #0078d4;
+                color: white;
+            }
+            QTableWidget {
+                background-color: #ffffff;
+                border: 1px solid #d0d0d0;
+                border-radius: 3px;
+                gridline-color: #e0e0e0;
+                alternate-background-color: #f8f8f8;
+            }
+            QTableWidget::item {
+                padding: 4px;
+            }
+            QTableWidget::item:selected {
+                background-color: #e3f2fd;
+                color: #000000;
+            }
+            QHeaderView::section {
+                background-color: #f0f0f0;
+                padding: 6px;
+                border: none;
+                border-bottom: 2px solid #d0d0d0;
+                font-weight: 600;
+            }
+            QComboBox {
+                background-color: #ffffff;
+                border: 1px solid #d0d0d0;
+                border-radius: 3px;
+                padding: 4px 8px;
+                min-width: 120px;
+            }
+            QComboBox:hover {
+                border-color: #0078d4;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QSpinBox {
+                background-color: #ffffff;
+                border: 1px solid #d0d0d0;
+                border-radius: 3px;
+                padding: 4px;
+                min-width: 80px;
+            }
+            QSpinBox:hover {
+                border-color: #0078d4;
+            }
+            QLineEdit {
+                background-color: #ffffff;
+                border: 1px solid #d0d0d0;
+                border-radius: 3px;
+                padding: 4px 8px;
+            }
+            QLineEdit:hover {
+                border-color: #0078d4;
+            }
+            QLineEdit:focus {
+                border: 2px solid #0078d4;
+            }
+            QFormLayout {
+                spacing: 8px;
+            }
+        """)
     
     def _load_configuration(self):
         """Load saved configuration"""
@@ -389,6 +561,16 @@ class MainWindow(QMainWindow):
         """Handle session error"""
         if session_id in self.session_tab_widgets:
             self.session_tab_widgets[session_id].show_error(error_message)
+    
+    def _show_help(self):
+        """Show help dialog"""
+        dialog = HelpDialog(self)
+        dialog.exec()
+    
+    def _show_about(self):
+        """Show about dialog"""
+        dialog = AboutDialog(self)
+        dialog.exec()
     
     def closeEvent(self, event):
         """Handle window close"""
