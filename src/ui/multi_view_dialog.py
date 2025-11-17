@@ -1,0 +1,224 @@
+"""Dialog for managing multi-view session groups"""
+from PyQt6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QPushButton,
+    QListWidgetItem, QMessageBox, QInputDialog
+)
+from PyQt6.QtCore import Qt
+from typing import Dict, List
+
+
+class MultiViewDialog(QDialog):
+    """Dialog for configuring which sessions to show together in multi-view"""
+    
+    def __init__(self, session_names: List[str], current_groups: Dict[str, List[str]], parent=None):
+        """Initialize dialog
+        
+        Args:
+            session_names: List of all available session names
+            current_groups: Current multi-view groups (group_name -> [session_names])
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self.setWindowTitle("Administrer Multi-view")
+        self.setMinimumSize(600, 500)
+        self.setModal(True)
+        
+        self.session_names = session_names
+        self.groups: Dict[str, List[str]] = current_groups.copy()
+        
+        self._setup_ui()
+        self._update_group_list()
+    
+    def _setup_ui(self):
+        """Setup user interface"""
+        layout = QVBoxLayout(self)
+        
+        # Instructions
+        info_label = QLabel(
+            "Opret grupper af sessions der skal vises side om side.\n"
+            "Hver gruppe vises i sin egen kolonne i multi-view mode."
+        )
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+        
+        # Groups list
+        groups_label = QLabel("Grupper:")
+        layout.addWidget(groups_label)
+        
+        self.groups_list = QListWidget()
+        self.groups_list.itemSelectionChanged.connect(self._on_group_selected)
+        layout.addWidget(self.groups_list)
+        
+        # Group buttons
+        group_buttons_layout = QHBoxLayout()
+        
+        self.new_group_btn = QPushButton("Ny gruppe")
+        self.new_group_btn.clicked.connect(self._new_group)
+        group_buttons_layout.addWidget(self.new_group_btn)
+        
+        self.delete_group_btn = QPushButton("Slet gruppe")
+        self.delete_group_btn.clicked.connect(self._delete_group)
+        group_buttons_layout.addWidget(self.delete_group_btn)
+        
+        group_buttons_layout.addStretch()
+        layout.addLayout(group_buttons_layout)
+        
+        # Sessions in group
+        sessions_label = QLabel("Sessions i valgt gruppe:")
+        layout.addWidget(sessions_label)
+        
+        self.sessions_list = QListWidget()
+        layout.addWidget(self.sessions_list)
+        
+        # Session buttons
+        session_buttons_layout = QHBoxLayout()
+        
+        self.add_session_btn = QPushButton("Tilføj session")
+        self.add_session_btn.clicked.connect(self._add_session_to_group)
+        session_buttons_layout.addWidget(self.add_session_btn)
+        
+        self.remove_session_btn = QPushButton("Fjern session")
+        self.remove_session_btn.clicked.connect(self._remove_session_from_group)
+        session_buttons_layout.addWidget(self.remove_session_btn)
+        
+        session_buttons_layout.addStretch()
+        layout.addLayout(session_buttons_layout)
+        
+        # Dialog buttons
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
+        
+        cancel_btn = QPushButton("Annuller")
+        cancel_btn.clicked.connect(self.reject)
+        buttons_layout.addWidget(cancel_btn)
+        
+        ok_btn = QPushButton("OK")
+        ok_btn.clicked.connect(self.accept)
+        buttons_layout.addWidget(ok_btn)
+        
+        layout.addLayout(buttons_layout)
+    
+    def _update_group_list(self):
+        """Update the groups list widget"""
+        self.groups_list.clear()
+        for group_name in sorted(self.groups.keys()):
+            session_count = len(self.groups[group_name])
+            item = QListWidgetItem(f"{group_name} ({session_count} sessions)")
+            item.setData(Qt.ItemDataRole.UserRole, group_name)
+            self.groups_list.addItem(item)
+    
+    def _on_group_selected(self):
+        """Handle group selection"""
+        selected_items = self.groups_list.selectedItems()
+        if selected_items:
+            group_name = selected_items[0].data(Qt.ItemDataRole.UserRole)
+            self._update_sessions_list(group_name)
+            self.delete_group_btn.setEnabled(True)
+            self.add_session_btn.setEnabled(True)
+        else:
+            self.sessions_list.clear()
+            self.delete_group_btn.setEnabled(False)
+            self.add_session_btn.setEnabled(False)
+        self.remove_session_btn.setEnabled(False)
+    
+    def _update_sessions_list(self, group_name: str):
+        """Update sessions list for a group"""
+        self.sessions_list.clear()
+        if group_name in self.groups:
+            for session_name in self.groups[group_name]:
+                item = QListWidgetItem(session_name)
+                self.sessions_list.addItem(item)
+    
+    def _new_group(self):
+        """Create a new group"""
+        name, ok = QInputDialog.getText(
+            self,
+            "Ny gruppe",
+            "Indtast gruppenavn:",
+            text=f"Gruppe {len(self.groups) + 1}"
+        )
+        if ok and name:
+            if name in self.groups:
+                QMessageBox.warning(self, "Fejl", f"Gruppen '{name}' findes allerede.")
+                return
+            self.groups[name] = []
+            self._update_group_list()
+            # Select the new group
+            for i in range(self.groups_list.count()):
+                item = self.groups_list.item(i)
+                if item.data(Qt.ItemDataRole.UserRole) == name:
+                    self.groups_list.setCurrentItem(item)
+                    break
+    
+    def _delete_group(self):
+        """Delete selected group"""
+        selected_items = self.groups_list.selectedItems()
+        if not selected_items:
+            return
+        
+        group_name = selected_items[0].data(Qt.ItemDataRole.UserRole)
+        reply = QMessageBox.question(
+            self,
+            "Slet gruppe",
+            f"Er du sikker på at du vil slette gruppen '{group_name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            del self.groups[group_name]
+            self._update_group_list()
+            self.sessions_list.clear()
+    
+    def _add_session_to_group(self):
+        """Add a session to the selected group"""
+        selected_items = self.groups_list.selectedItems()
+        if not selected_items:
+            return
+        
+        group_name = selected_items[0].data(Qt.ItemDataRole.UserRole)
+        
+        # Get available sessions (not already in any group)
+        used_sessions = set()
+        for sessions in self.groups.values():
+            used_sessions.update(sessions)
+        available = [s for s in self.session_names if s not in used_sessions]
+        
+        if not available:
+            QMessageBox.information(self, "Info", "Alle sessions er allerede i grupper.")
+            return
+        
+        # Let user select session
+        session, ok = QInputDialog.getItem(
+            self,
+            "Tilføj session",
+            "Vælg session:",
+            available,
+            0,
+            False
+        )
+        if ok and session:
+            self.groups[group_name].append(session)
+            self._update_sessions_list(group_name)
+            self._update_group_list()
+    
+    def _remove_session_from_group(self):
+        """Remove selected session from group"""
+        selected_items = self.groups_list.selectedItems()
+        if not selected_items:
+            return
+        
+        group_name = selected_items[0].data(Qt.ItemDataRole.UserRole)
+        session_items = self.sessions_list.selectedItems()
+        if not session_items:
+            return
+        
+        session_name = session_items[0].text()
+        if session_name in self.groups[group_name]:
+            self.groups[group_name].remove(session_name)
+            self._update_sessions_list(group_name)
+            self._update_group_list()
+    
+    def get_groups(self) -> Dict[str, List[str]]:
+        """Get configured groups"""
+        # Only return groups with at least one session
+        return {name: sessions for name, sessions in self.groups.items() if sessions}
+

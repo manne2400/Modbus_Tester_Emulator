@@ -1,0 +1,77 @@
+{
+  "version": "1.0",
+  "connections": [
+    {
+      "name": "127.0.0.1",
+      "connection_type": "TCP",
+      "host": "127.0.0.1",
+      "port": 5020,
+      "port_name": null,
+      "baudrate": null,
+      "parity": null,
+      "stopbits": null,
+      "bytesize": null,
+      "timeout": 3.0,
+      "retries": 3
+    },
+    {
+      "name": "COM11",
+      "connection_type": "RTU",
+      "host": null,
+      "port": null,
+      "port_name": "COM11",
+      "baudrate": 9600,
+      "parity": "N",
+      "stopbits": 1,
+      "bytesize": 8,
+      "timeout": 3.0,
+      "retries": 3
+    }
+  ],
+  "sessions": [
+    {
+      "name": "Session 1",
+      "connection_profile_name": "COM11",
+      "slave_id": 1,
+      "function_code": 3,
+      "start_address": 0,
+      "quantity": 10,
+      "poll_interval_ms": 1000,
+      "tags": [],
+      "status": "Running"
+    },
+    {
+      "name": "Session 2",
+      "connection_profile_name": "127.0.0.1",
+      "slave_id": 1,
+      "function_code": 3,
+      "start_address": 0,
+      "quantity": 10,
+      "poll_interval_ms": 1000,
+      "tags": [],
+      "status": "Running"
+    },
+    {
+      "name": "Session 3",
+      "connection_profile_name": "COM11",
+      "slave_id": 1,
+      "function_code": 4,
+      "start_address": 0,
+      "quantity": 10,
+      "poll_interval_ms": 1000,
+      "tags": [],
+      "status": "Running"
+    },
+    {
+      "name": "Session 4",
+      "connection_profile_name": "127.0.0.1",
+      "slave_id": 1,
+      "function_code": 4,
+      "start_address": 0,
+      "quantity": 10,
+      "poll_interval_ms": 1000,
+      "tags": [],
+      "status": "Running"
+    }
+  ]
+}

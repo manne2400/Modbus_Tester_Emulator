@@ -14,6 +14,7 @@ class ConnectionTree(QTreeWidget):
     edit_connection_requested = pyqtSignal(str)  # profile_name
     delete_connection_requested = pyqtSignal(str)  # profile_name
     new_session_requested = pyqtSignal()
+    multi_view_group_selected = pyqtSignal(str)  # group_name
     
     def __init__(self):
         """Initialize connection tree"""
@@ -26,10 +27,44 @@ class ConnectionTree(QTreeWidget):
     def update_connections(
         self,
         connections: List[ConnectionProfile],
-        sessions: Dict[str, SessionDefinition]
+        sessions: Dict[str, SessionDefinition],
+        multi_view_groups: Dict[str, List[str]] = None,
+        multi_view_active: bool = False
     ):
-        """Update tree with connections and sessions, grouped by type"""
+        """Update tree with connections and sessions, grouped by type
+        
+        Args:
+            connections: List of connection profiles
+            sessions: Dict of session definitions
+            multi_view_groups: Dict of multi-view groups (group_name -> [session_names])
+            multi_view_active: Whether multi-view mode is active
+        """
         self.clear()
+        
+        # If multi-view is active, show multi-view groups first
+        if multi_view_active and multi_view_groups:
+            multi_view_group = QTreeWidgetItem(self)
+            multi_view_group.setText(0, "Multi-view Grupper")
+            multi_view_group.setData(0, Qt.ItemDataRole.UserRole, ("multi_view_group", ""))
+            # Make group item bold
+            font = multi_view_group.font(0)
+            font.setBold(True)
+            multi_view_group.setFont(0, font)
+            multi_view_group.setExpanded(True)
+            
+            for group_name, session_names in multi_view_groups.items():
+                group_item = QTreeWidgetItem(multi_view_group)
+                group_item.setText(0, f"📊 {group_name}")
+                group_item.setData(0, Qt.ItemDataRole.UserRole, ("multi_view", group_name))
+                
+                # Add sessions in this group
+                for session_name in session_names:
+                    if session_name in sessions:
+                        session_item = QTreeWidgetItem(group_item)
+                        session_item.setText(0, session_name)
+                        session_item.setData(0, Qt.ItemDataRole.UserRole, ("session", session_name))
+                
+                group_item.setExpanded(True)
         
         # Group connections by type
         tcp_connections = [c for c in connections if c.connection_type == ConnectionType.TCP]
@@ -51,12 +86,25 @@ class ConnectionTree(QTreeWidget):
                 conn_item.setText(0, conn.name)
                 conn_item.setData(0, Qt.ItemDataRole.UserRole, ("connection", conn.name))
                 
-                # Add sessions for this connection
-                for session in sessions.values():
-                    if session.connection_profile_name == conn.name:
-                        session_item = QTreeWidgetItem(conn_item)
-                        session_item.setText(0, session.name)
-                        session_item.setData(0, Qt.ItemDataRole.UserRole, ("session", session.name))
+                # Add sessions for this connection (only if not in multi-view or multi-view is off)
+                if not multi_view_active:
+                    for session in sessions.values():
+                        if session.connection_profile_name == conn.name:
+                            session_item = QTreeWidgetItem(conn_item)
+                            session_item.setText(0, session.name)
+                            session_item.setData(0, Qt.ItemDataRole.UserRole, ("session", session.name))
+                else:
+                    # Only show sessions not in any multi-view group
+                    sessions_in_groups = set()
+                    for group_sessions in (multi_view_groups or {}).values():
+                        sessions_in_groups.update(group_sessions)
+                    
+                    for session in sessions.values():
+                        if (session.connection_profile_name == conn.name and 
+                            session.name not in sessions_in_groups):
+                            session_item = QTreeWidgetItem(conn_item)
+                            session_item.setText(0, session.name)
+                            session_item.setData(0, Qt.ItemDataRole.UserRole, ("session", session.name))
                 
                 conn_item.setExpanded(True)
         
@@ -76,12 +124,25 @@ class ConnectionTree(QTreeWidget):
                 conn_item.setText(0, conn.name)
                 conn_item.setData(0, Qt.ItemDataRole.UserRole, ("connection", conn.name))
                 
-                # Add sessions for this connection
-                for session in sessions.values():
-                    if session.connection_profile_name == conn.name:
-                        session_item = QTreeWidgetItem(conn_item)
-                        session_item.setText(0, session.name)
-                        session_item.setData(0, Qt.ItemDataRole.UserRole, ("session", session.name))
+                # Add sessions for this connection (only if not in multi-view or multi-view is off)
+                if not multi_view_active:
+                    for session in sessions.values():
+                        if session.connection_profile_name == conn.name:
+                            session_item = QTreeWidgetItem(conn_item)
+                            session_item.setText(0, session.name)
+                            session_item.setData(0, Qt.ItemDataRole.UserRole, ("session", session.name))
+                else:
+                    # Only show sessions not in any multi-view group
+                    sessions_in_groups = set()
+                    for group_sessions in (multi_view_groups or {}).values():
+                        sessions_in_groups.update(group_sessions)
+                    
+                    for session in sessions.values():
+                        if (session.connection_profile_name == conn.name and 
+                            session.name not in sessions_in_groups):
+                            session_item = QTreeWidgetItem(conn_item)
+                            session_item.setText(0, session.name)
+                            session_item.setData(0, Qt.ItemDataRole.UserRole, ("session", session.name))
                 
                 conn_item.setExpanded(True)
     
@@ -95,7 +156,10 @@ class ConnectionTree(QTreeWidget):
             if data:
                 item_type, item_name = data
                 
-                if item_type == "type_group":
+                if item_type == "multi_view":
+                    # Multi-view group selected - emit signal to show this group
+                    self.multi_view_group_selected.emit(item_name)
+                elif item_type == "type_group":
                     # Group level menu - can add new connection of this type
                     new_connection_action = menu.addAction("Ny forbindelse")
                     new_connection_action.triggered.connect(
@@ -135,3 +199,6 @@ class ConnectionTree(QTreeWidget):
             item_type, item_name = data
             if item_type == "connection":
                 self.connection_selected.emit(item_name)
+            elif item_type == "multi_view":
+                # Double-click on multi-view group to show it
+                self.multi_view_group_selected.emit(item_name)

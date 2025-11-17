@@ -7,11 +7,13 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QAction, QIcon, QFont
 from pathlib import Path
 from src.ui.widgets.connection_tree import ConnectionTree
+from src.ui.widgets.multi_view_container import MultiViewContainer
 from src.ui.log_viewer import LogViewer
 from src.ui.connection_dialog import ConnectionDialog
 from src.ui.session_tab import SessionTab
 from src.ui.about_dialog import AboutDialog
 from src.ui.help_dialog import HelpDialog
+from src.ui.multi_view_dialog import MultiViewDialog
 from src.storage.config_manager import ConfigManager
 from src.storage.project_manager import ProjectManager
 from src.application.session_manager import SessionManager
@@ -51,9 +53,13 @@ class MainWindow(QMainWindow):
         
         # UI components
         self.connection_tree = None
-        self.session_tabs = QTabWidget()
-        self.session_tabs.setTabsClosable(True)
-        self.session_tabs.tabCloseRequested.connect(self._close_session_tab)
+        self.session_container = MultiViewContainer()
+        self.session_container.single_view.tabCloseRequested.connect(self._close_session_tab)
+        self.session_container.show_with_session.connect(self._show_sessions_together)
+        
+        # Multi-view state
+        self.multi_view_active = False
+        self.multi_view_groups: dict[str, list[str]] = {}  # group_name -> [session_names]
         
         # Data
         self.connections: list[ConnectionProfile] = []
@@ -87,11 +93,12 @@ class MainWindow(QMainWindow):
         self.connection_tree.edit_connection_requested.connect(self._on_edit_connection)
         self.connection_tree.delete_connection_requested.connect(self._on_delete_connection)
         self.connection_tree.new_session_requested.connect(self._on_new_session)
+        self.connection_tree.multi_view_group_selected.connect(self._on_multi_view_group_selected)
         splitter.addWidget(self.connection_tree)
         splitter.setStretchFactor(0, 0)
         
-        # Right side: Session tabs
-        splitter.addWidget(self.session_tabs)
+        # Right side: Session container (supports single and multi-view)
+        splitter.addWidget(self.session_container)
         splitter.setStretchFactor(1, 1)
         
         # Menu bar
@@ -158,6 +165,18 @@ class MainWindow(QMainWindow):
         self.show_log_action.setChecked(False)
         self.show_log_action.triggered.connect(self._toggle_log_viewer)
         view_menu.addAction(self.show_log_action)
+        
+        view_menu.addSeparator()
+        
+        self.multi_view_action = QAction("Multi-view", self)
+        self.multi_view_action.setCheckable(True)
+        self.multi_view_action.setChecked(False)
+        self.multi_view_action.triggered.connect(self._toggle_multi_view)
+        view_menu.addAction(self.multi_view_action)
+        
+        manage_multi_view_action = QAction("Administrer multi-view...", self)
+        manage_multi_view_action.triggered.connect(self._manage_multi_view)
+        view_menu.addAction(manage_multi_view_action)
         
         # Help menu
         help_menu = menubar.addMenu("Hjælp")
@@ -358,7 +377,12 @@ class MainWindow(QMainWindow):
             self._create_session_tab(session)
         
         # Update connection tree
-        self.connection_tree.update_connections(self.connections, self.sessions)
+        self.connection_tree.update_connections(
+            self.connections, 
+            self.sessions,
+            self.multi_view_groups,
+            self.multi_view_active
+        )
         
         # Try to load last project
         last_project = self.project_manager.get_last_project_path()
@@ -384,9 +408,15 @@ class MainWindow(QMainWindow):
             # Clear all
             self.connections.clear()
             self.sessions.clear()
-            self.session_tabs.clear()
+            # Clear container
+            for tabs in self.session_container.get_all_tabs():
+                tabs.clear()
             self.session_tab_widgets.clear()
-            self.connection_tree.update_connections([], {})
+            self.multi_view_groups.clear()
+            self.multi_view_active = False
+            self.multi_view_action.setChecked(False)
+            self.session_container.set_single_view()
+            self.connection_tree.update_connections([], {}, {}, False)
             self.session_manager = SessionManager()
             self.polling_engine = PollingEngine(self.session_manager)
             self.polling_engine.start()
@@ -410,8 +440,14 @@ class MainWindow(QMainWindow):
         # Clear current
         self.connections.clear()
         self.sessions.clear()
-        self.session_tabs.clear()
+        # Clear container
+        for tabs in self.session_container.get_all_tabs():
+            tabs.clear()
         self.session_tab_widgets.clear()
+        self.multi_view_groups.clear()
+        self.multi_view_active = False
+        self.multi_view_action.setChecked(False)
+        self.session_container.set_single_view()
         
         # Load new
         self.connections = connections
@@ -423,7 +459,12 @@ class MainWindow(QMainWindow):
             self.session_manager.add_session(session)
             self._create_session_tab(session)
         
-        self.connection_tree.update_connections(self.connections, self.sessions)
+        self.connection_tree.update_connections(
+            self.connections, 
+            self.sessions,
+            self.multi_view_groups,
+            self.multi_view_active
+        )
     
     def _save_project(self):
         """Save project to file"""
@@ -448,7 +489,12 @@ class MainWindow(QMainWindow):
                 self.connections.append(profile)
                 self.session_manager.add_connection(profile)
                 self.config_manager.save_connections(self.connections)
-                self.connection_tree.update_connections(self.connections, self.sessions)
+                self.connection_tree.update_connections(
+                    self.connections, 
+                    self.sessions,
+                    self.multi_view_groups,
+                    self.multi_view_active
+                )
     
     def _on_edit_connection(self, profile_name: str):
         """Handle edit connection request"""
@@ -464,7 +510,12 @@ class MainWindow(QMainWindow):
                     self.session_manager.remove_connection(profile_name)
                     self.session_manager.add_connection(updated_profile)
                     self.config_manager.save_connections(self.connections)
-                    self.connection_tree.update_connections(self.connections, self.sessions)
+                    self.connection_tree.update_connections(
+                    self.connections, 
+                    self.sessions,
+                    self.multi_view_groups,
+                    self.multi_view_active
+                )
     
     def _on_delete_connection(self, profile_name: str):
         """Handle delete connection request"""
@@ -478,7 +529,12 @@ class MainWindow(QMainWindow):
             self.connections = [c for c in self.connections if c.name != profile_name]
             self.session_manager.remove_connection(profile_name)
             self.config_manager.save_connections(self.connections)
-            self.connection_tree.update_connections(self.connections, self.sessions)
+            self.connection_tree.update_connections(
+                self.connections, 
+                self.sessions,
+                self.multi_view_groups,
+                self.multi_view_active
+            )
     
     def _on_new_session(self):
         """Handle new session request"""
@@ -501,19 +557,34 @@ class MainWindow(QMainWindow):
         self.session_manager.add_session(session)
         self.config_manager.save_sessions(list(self.sessions.values()))
         self._create_session_tab(session)
-        self.connection_tree.update_connections(self.connections, self.sessions)
+        self.connection_tree.update_connections(
+            self.connections, 
+            self.sessions,
+            self.multi_view_groups,
+            self.multi_view_active
+        )
     
     def _create_session_tab(self, session: SessionDefinition):
         """Create a session tab"""
         tab = SessionTab(session, self.connections, self.session_manager, self.polling_engine)
         # Connect signal to update tree when connection changes
         tab.connection_changed.connect(self._on_session_connection_changed)
-        self.session_tabs.addTab(tab, session.name)
+        # Add to container
+        self.session_container.add_session_tab(session.name, tab)
+        # Connect tab close for this tab widget
+        tab_widget = self.session_container.get_tab_widget(session.name)
+        if tab_widget:
+            tab_widget.tabCloseRequested.connect(self._close_session_tab)
         self.session_tab_widgets[session.name] = tab
     
     def _close_session_tab(self, index: int):
         """Close a session tab"""
-        tab = self.session_tabs.widget(index)
+        # Find which tab widget this is from
+        sender = self.sender()
+        if not sender:
+            return
+        
+        tab = sender.widget(index)
         if tab and isinstance(tab, SessionTab):
             session_id = tab.session.name
             # Stop session if running
@@ -525,23 +596,71 @@ class MainWindow(QMainWindow):
                 del self.sessions[session_id]
             if session_id in self.session_tab_widgets:
                 del self.session_tab_widgets[session_id]
+            # Remove from multi-view groups if present
+            if self.multi_view_active:
+                for group_name, session_names in list(self.multi_view_groups.items()):
+                    if session_id in session_names:
+                        session_names.remove(session_id)
+                        if not session_names:
+                            del self.multi_view_groups[group_name]
             # Remove tab from UI
-            self.session_tabs.removeTab(index)
+            self.session_container.remove_session_tab(session_id)
             # Save updated sessions
             self.config_manager.save_sessions(list(self.sessions.values()))
             # Update connection tree
-            self.connection_tree.update_connections(self.connections, self.sessions)
+            self.connection_tree.update_connections(
+                self.connections, 
+                self.sessions,
+                self.multi_view_groups,
+                self.multi_view_active
+            )
     
     def _on_connection_selected(self, profile_name: str):
         """Handle connection selection"""
         pass
+    
+    def _on_multi_view_group_selected(self, group_name: str):
+        """Handle multi-view group selection - ensure all groups are visible, focus on selected"""
+        if not self.multi_view_active or group_name not in self.multi_view_groups:
+            return
+        
+        # If multi-view is not showing all groups, rebuild it
+        # Store all tabs
+        tabs_to_move = {}
+        for session_name, tab in list(self.session_tab_widgets.items()):
+            tabs_to_move[session_name] = tab
+        
+        # Clear and set multi-view with ALL groups
+        self.session_container.set_single_view()
+        for tabs in self.session_container.get_all_tabs():
+            tabs.clear()
+        
+        self.session_container.set_multi_view(self.multi_view_groups)
+        
+        # Add all tabs to appropriate groups
+        for session_name, tab in tabs_to_move.items():
+            self.session_container.add_session_tab(session_name, tab)
+            tab_widget = self.session_container.get_tab_widget(session_name)
+            if tab_widget:
+                tab_widget.tabCloseRequested.connect(self._close_session_tab)
+        
+        # Focus on the selected group's tab widget (make it active)
+        if group_name in self.session_container.multi_view_tabs:
+            tab_widget = self.session_container.multi_view_tabs[group_name]
+            if tab_widget.count() > 0:
+                tab_widget.setCurrentIndex(0)
     
     def _on_session_connection_changed(self, session_name: str):
         """Handle session connection change - update tree view"""
         # Save sessions to ensure connection change is persisted
         self.config_manager.save_sessions(list(self.sessions.values()))
         # Update connection tree to reflect new grouping
-        self.connection_tree.update_connections(self.connections, self.sessions)
+        self.connection_tree.update_connections(
+            self.connections, 
+            self.sessions,
+            self.multi_view_groups,
+            self.multi_view_active
+        )
     
     def _start_all_sessions(self):
         """Start all sessions"""
@@ -591,6 +710,134 @@ class MainWindow(QMainWindow):
         """Show about dialog"""
         dialog = AboutDialog(self)
         dialog.exec()
+    
+    def _toggle_multi_view(self, checked: bool):
+        """Toggle multi-view mode"""
+        self.multi_view_active = checked
+        
+        if checked:
+            # Activate multi-view if groups exist
+            if self.multi_view_groups:
+                # Store all tabs
+                tabs_to_move = {}
+                for session_name, tab in list(self.session_tab_widgets.items()):
+                    tabs_to_move[session_name] = tab
+                
+                # Clear and set multi-view
+                self.session_container.set_single_view()
+                for tabs in self.session_container.get_all_tabs():
+                    tabs.clear()
+                
+                self.session_container.set_multi_view(self.multi_view_groups)
+                
+                # Add all tabs to appropriate groups
+                for session_name, tab in tabs_to_move.items():
+                    self.session_container.add_session_tab(session_name, tab)
+                    tab_widget = self.session_container.get_tab_widget(session_name)
+                    if tab_widget:
+                        tab_widget.tabCloseRequested.connect(self._close_session_tab)
+                
+                # Update connection tree to show multi-view groups
+                self.connection_tree.update_connections(
+                    self.connections, 
+                    self.sessions,
+                    self.multi_view_groups,
+                    self.multi_view_active
+                )
+            else:
+                # No groups, show dialog to create them
+                QMessageBox.information(
+                    self,
+                    "Multi-view",
+                    "Ingen grupper er oprettet endnu.\n"
+                    "Brug 'Administrer multi-view...' til at oprette grupper."
+                )
+                self.multi_view_action.setChecked(False)
+                self.multi_view_active = False
+        else:
+            # Deactivate multi-view
+            self.session_container.set_single_view()
+            # Move all tabs back to single view
+            tabs_to_move = {}
+            for session_name, tab in list(self.session_tab_widgets.items()):
+                tabs_to_move[session_name] = tab
+            
+            # Clear multi-view tabs
+            for tabs in self.session_container.get_all_tabs():
+                tabs.clear()
+            
+            # Add all tabs to single view
+            for session_name, tab in tabs_to_move.items():
+                self.session_container.add_session_tab(session_name, tab)
+                tab_widget = self.session_container.get_tab_widget(session_name)
+                if tab_widget:
+                    tab_widget.tabCloseRequested.connect(self._close_session_tab)
+            
+            # Update connection tree
+            self.connection_tree.update_connections(
+                self.connections, 
+                self.sessions,
+                self.multi_view_groups,
+                self.multi_view_active
+            )
+    
+    def _manage_multi_view(self):
+        """Open dialog to manage multi-view groups"""
+        session_names = list(self.sessions.keys())
+        dialog = MultiViewDialog(session_names, self.multi_view_groups, self)
+        if dialog.exec():
+            self.multi_view_groups = dialog.get_groups()
+            # If multi-view is active, update it
+            if self.multi_view_active and self.multi_view_groups:
+                # Store all tabs temporarily
+                tabs_to_move = {}
+                for session_name, tab in list(self.session_tab_widgets.items()):
+                    tabs_to_move[session_name] = tab
+                
+                # Clear container and rebuild
+                self.session_container.set_single_view()
+                for tabs in self.session_container.get_all_tabs():
+                    tabs.clear()
+                
+                # Set multi-view with new groups
+                self.session_container.set_multi_view(self.multi_view_groups)
+                
+                # Add tabs to appropriate groups
+                for session_name, tab in tabs_to_move.items():
+                    self.session_container.add_session_tab(session_name, tab)
+                    tab_widget = self.session_container.get_tab_widget(session_name)
+                    if tab_widget:
+                        tab_widget.tabCloseRequested.connect(self._close_session_tab)
+            elif self.multi_view_active and not self.multi_view_groups:
+                # No groups, disable multi-view
+                self.multi_view_action.setChecked(False)
+                self._toggle_multi_view(False)
+    
+    def _show_sessions_together(self, session_name: str, other_session_name: str):
+        """Show two sessions together in multi-view"""
+        # Create a group for these two sessions
+        group_name = f"{session_name} & {other_session_name}"
+        self.multi_view_groups[group_name] = [session_name, other_session_name]
+        
+        # Enable multi-view if not already
+        if not self.multi_view_active:
+            self.multi_view_action.setChecked(True)
+            self._toggle_multi_view(True)
+        else:
+            # Update multi-view
+            self.session_container.set_multi_view(self.multi_view_groups)
+            # Rebuild tabs
+            tabs_to_move = {}
+            for name, tab in list(self.session_tab_widgets.items()):
+                self.session_container.remove_session_tab(name)
+                tabs_to_move[name] = tab
+            
+            for name, tab in tabs_to_move.items():
+                self.session_container.add_session_tab(name, tab)
+                tab_widget = self.session_container.get_tab_widget(name)
+                if tab_widget:
+                    tab_widget.tabCloseRequested.connect(self._close_session_tab)
+
     
     def closeEvent(self, event):
         """Handle window close"""
