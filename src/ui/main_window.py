@@ -14,6 +14,8 @@ from src.ui.session_tab import SessionTab
 from src.ui.about_dialog import AboutDialog
 from src.ui.help_dialog import HelpDialog
 from src.ui.multi_view_dialog import MultiViewDialog
+from src.ui.simulator_dialog import SimulatorDialog
+from src.application.simulator_manager import SimulatorManager
 from src.storage.config_manager import ConfigManager
 from src.storage.project_manager import ProjectManager
 from src.application.session_manager import SessionManager
@@ -42,6 +44,7 @@ class MainWindow(QMainWindow):
         self.project_manager = ProjectManager(self.config_manager)
         self.session_manager = SessionManager()
         self.polling_engine = PollingEngine(self.session_manager)
+        self.simulator_manager = SimulatorManager()
         
         # Connect polling engine signals
         self.polling_engine.poll_result.connect(self._on_poll_result)
@@ -177,6 +180,12 @@ class MainWindow(QMainWindow):
         manage_multi_view_action = QAction("Administrer multi-view...", self)
         manage_multi_view_action.triggered.connect(self._manage_multi_view)
         view_menu.addAction(manage_multi_view_action)
+        
+        view_menu.addSeparator()
+        
+        simulator_action = QAction("Modbus Simulator...", self)
+        simulator_action.triggered.connect(self._show_simulator_dialog)
+        view_menu.addAction(simulator_action)
         
         # Help menu
         help_menu = menubar.addMenu("Hjælp")
@@ -837,7 +846,11 @@ class MainWindow(QMainWindow):
                 tab_widget = self.session_container.get_tab_widget(name)
                 if tab_widget:
                     tab_widget.tabCloseRequested.connect(self._close_session_tab)
-
+    
+    def _show_simulator_dialog(self):
+        """Show simulator configuration dialog"""
+        dialog = SimulatorDialog(self, self.simulator_manager)
+        dialog.exec()
     
     def closeEvent(self, event):
         """Handle window close"""
@@ -847,6 +860,12 @@ class MainWindow(QMainWindow):
         
         # Stop polling
         self.polling_engine.stop()
+        
+        # Stop simulators
+        if self.simulator_manager.is_tcp_running():
+            self.simulator_manager.stop_tcp_simulator()
+        if self.simulator_manager.is_rtu_running():
+            self.simulator_manager.stop_rtu_simulator()
         
         # Disconnect all
         for conn in self.connections:

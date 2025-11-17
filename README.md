@@ -4,13 +4,16 @@ En Modbus master/simulator desktop-applikation til test af Modbus RTU (RS-485/RS
 
 ## Funktioner
 
-- Modbus RTU (master) via RS-485/RS-232
-- Modbus TCP (client/master)
-- Flere parallelle sessions
-- Læs/skriv coils, discrete inputs, input registers og holding registers
-- Omfattende fejlsøgning: hexdump, tidsstempler, log, statuskoder
-- Real-time data visning i tabeller
-- Manuel write operationer
+- **Modbus RTU (master)** via RS-485/RS-232
+- **Modbus TCP (client/master)**
+- **Flere parallelle sessions** med multi-view support
+- **Læs/skriv coils, discrete inputs, input registers og holding registers**
+- **Integreret Modbus Simulator** - Start TCP/RTU simulatoren direkte fra appen
+- **Multi-view** - Se flere sessions side om side i grupper
+- **Omfattende fejlsøgning**: hexdump, tidsstempler, log, statuskoder
+- **Real-time data visning** i tabeller
+- **Manuel write operationer**
+- **Projekt management** - Gem og genåbn konfigurationer
 
 ## Installation
 
@@ -28,7 +31,9 @@ python src/main.py
 
 ### Modbus Simulator (til test)
 
-For at teste applikationen kan du køre en simuleret Modbus server:
+**Anbefalet:** Brug den integrerede simulator i appen via **Vis → Modbus Simulator...**
+
+Alternativt kan du køre simulatoren fra kommandolinjen:
 
 **TCP Simulator:**
 ```bash
@@ -54,8 +59,8 @@ Simulatoren har følgende testdata:
 - **Discrete inputs (0-9)**: False, True, False, True, False, True, False, True, False, True
 
 **Eksempel på forbindelse:**
-1. Start simulatoren: `python src/simulator/modbus_simulator.py --type tcp --port 5020`
-2. Åbn Modbus Tester applikationen
+1. Start applikationen: `python src/main.py`
+2. Start simulatoren via **Vis → Modbus Simulator...** → Start TCP Simulator (port 5020)
 3. Opret en ny TCP forbindelse med:
    - Host: `127.0.0.1`
    - Port: `5020`
@@ -65,6 +70,11 @@ Simulatoren har følgende testdata:
    - Start address: `0`
    - Quantity: `10`
 5. Start polling for at se dataene
+
+**Multi-view:**
+- Opret grupper via **Vis → Administrer multi-view...**
+- Aktiver multi-view via **Vis → Multi-view**
+- Se flere sessions side om side
 
 ## Byg Executable (.exe)
 
