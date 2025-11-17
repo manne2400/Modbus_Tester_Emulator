@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QComboBox, QSpinBox, QPushButton, QLineEdit
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from src.models.session_definition import SessionDefinition, SessionStatus
 from src.models.connection_profile import ConnectionProfile
 from src.models.poll_result import PollResult
@@ -17,6 +17,9 @@ from typing import List
 
 class SessionTab(QWidget):
     """Tab widget for a Modbus session"""
+    
+    # Signal emitted when connection changes
+    connection_changed = pyqtSignal(str)  # session_name
     
     def __init__(
         self,
@@ -147,9 +150,15 @@ class SessionTab(QWidget):
         self.data_table = DataTable()
         layout.addWidget(self.data_table)
         
-        # Status bar
+        # Status bar - wrap in horizontal layout to prevent expansion
+        status_layout = QHBoxLayout()
+        status_layout.setContentsMargins(0, 0, 0, 0)
+        status_layout.setSpacing(0)
         self.status_bar = StatusBar()
-        layout.addWidget(self.status_bar)
+        # Add status bar without stretch factor
+        status_layout.addWidget(self.status_bar, 0)  # 0 = no stretch
+        status_layout.addStretch()  # Push status bar to left, fill remaining space
+        layout.addLayout(status_layout)
     
     def _on_connection_changed(self, index: int):
         """Handle connection change"""
@@ -157,6 +166,8 @@ class SessionTab(QWidget):
         if profile_name:
             self.session.connection_profile_name = profile_name
             self.session_manager.add_session(self.session)
+            # Emit signal to notify main window
+            self.connection_changed.emit(self.session.name)
     
     def _on_slave_id_changed(self, value: int):
         """Handle slave ID change"""

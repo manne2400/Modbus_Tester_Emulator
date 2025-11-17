@@ -1,7 +1,7 @@
 """Connection tree widget"""
 from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem, QMenu
 from PyQt6.QtCore import Qt, pyqtSignal
-from src.models.connection_profile import ConnectionProfile
+from src.models.connection_profile import ConnectionProfile, ConnectionType
 from src.models.session_definition import SessionDefinition
 from typing import List, Dict
 
@@ -28,22 +28,62 @@ class ConnectionTree(QTreeWidget):
         connections: List[ConnectionProfile],
         sessions: Dict[str, SessionDefinition]
     ):
-        """Update tree with connections and sessions"""
+        """Update tree with connections and sessions, grouped by type"""
         self.clear()
         
-        for conn in connections:
-            conn_item = QTreeWidgetItem(self)
-            conn_item.setText(0, conn.name)
-            conn_item.setData(0, Qt.ItemDataRole.UserRole, ("connection", conn.name))
+        # Group connections by type
+        tcp_connections = [c for c in connections if c.connection_type == ConnectionType.TCP]
+        rtu_connections = [c for c in connections if c.connection_type == ConnectionType.RTU]
+        
+        # Create TCP group
+        if tcp_connections:
+            tcp_group = QTreeWidgetItem(self)
+            tcp_group.setText(0, "Modbus TCP")
+            tcp_group.setData(0, Qt.ItemDataRole.UserRole, ("type_group", "TCP"))
+            # Make group item bold
+            font = tcp_group.font(0)
+            font.setBold(True)
+            tcp_group.setFont(0, font)
+            tcp_group.setExpanded(True)
             
-            # Add sessions for this connection
-            for session in sessions.values():
-                if session.connection_profile_name == conn.name:
-                    session_item = QTreeWidgetItem(conn_item)
-                    session_item.setText(0, session.name)
-                    session_item.setData(0, Qt.ItemDataRole.UserRole, ("session", session.name))
+            for conn in tcp_connections:
+                conn_item = QTreeWidgetItem(tcp_group)
+                conn_item.setText(0, conn.name)
+                conn_item.setData(0, Qt.ItemDataRole.UserRole, ("connection", conn.name))
+                
+                # Add sessions for this connection
+                for session in sessions.values():
+                    if session.connection_profile_name == conn.name:
+                        session_item = QTreeWidgetItem(conn_item)
+                        session_item.setText(0, session.name)
+                        session_item.setData(0, Qt.ItemDataRole.UserRole, ("session", session.name))
+                
+                conn_item.setExpanded(True)
+        
+        # Create RTU group
+        if rtu_connections:
+            rtu_group = QTreeWidgetItem(self)
+            rtu_group.setText(0, "Modbus RTU")
+            rtu_group.setData(0, Qt.ItemDataRole.UserRole, ("type_group", "RTU"))
+            # Make group item bold
+            font = rtu_group.font(0)
+            font.setBold(True)
+            rtu_group.setFont(0, font)
+            rtu_group.setExpanded(True)
             
-            conn_item.setExpanded(True)
+            for conn in rtu_connections:
+                conn_item = QTreeWidgetItem(rtu_group)
+                conn_item.setText(0, conn.name)
+                conn_item.setData(0, Qt.ItemDataRole.UserRole, ("connection", conn.name))
+                
+                # Add sessions for this connection
+                for session in sessions.values():
+                    if session.connection_profile_name == conn.name:
+                        session_item = QTreeWidgetItem(conn_item)
+                        session_item.setText(0, session.name)
+                        session_item.setData(0, Qt.ItemDataRole.UserRole, ("session", session.name))
+                
+                conn_item.setExpanded(True)
     
     def _show_context_menu(self, position):
         """Show context menu"""
@@ -55,7 +95,13 @@ class ConnectionTree(QTreeWidget):
             if data:
                 item_type, item_name = data
                 
-                if item_type == "connection":
+                if item_type == "type_group":
+                    # Group level menu - can add new connection of this type
+                    new_connection_action = menu.addAction("Ny forbindelse")
+                    new_connection_action.triggered.connect(
+                        lambda: self.new_connection_requested.emit()
+                    )
+                elif item_type == "connection":
                     new_session_action = menu.addAction("Ny session")
                     new_session_action.triggered.connect(
                         lambda: self.new_session_requested.emit()

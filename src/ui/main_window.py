@@ -277,6 +277,10 @@ class MainWindow(QMainWindow):
                 background-color: #0078d4;
                 color: white;
             }
+            QTreeWidget::item:has-children {
+                font-weight: 600;
+                color: #333333;
+            }
             QTableWidget {
                 background-color: #ffffff;
                 border: 1px solid #d0d0d0;
@@ -502,6 +506,8 @@ class MainWindow(QMainWindow):
     def _create_session_tab(self, session: SessionDefinition):
         """Create a session tab"""
         tab = SessionTab(session, self.connections, self.session_manager, self.polling_engine)
+        # Connect signal to update tree when connection changes
+        tab.connection_changed.connect(self._on_session_connection_changed)
         self.session_tabs.addTab(tab, session.name)
         self.session_tab_widgets[session.name] = tab
     
@@ -510,18 +516,32 @@ class MainWindow(QMainWindow):
         tab = self.session_tabs.widget(index)
         if tab and isinstance(tab, SessionTab):
             session_id = tab.session.name
+            # Stop session if running
             self.session_manager.stop_session(session_id)
+            # Remove from session manager
             self.session_manager.remove_session(session_id)
+            # Remove from dictionaries
             if session_id in self.sessions:
                 del self.sessions[session_id]
             if session_id in self.session_tab_widgets:
                 del self.session_tab_widgets[session_id]
+            # Remove tab from UI
+            self.session_tabs.removeTab(index)
+            # Save updated sessions
             self.config_manager.save_sessions(list(self.sessions.values()))
+            # Update connection tree
             self.connection_tree.update_connections(self.connections, self.sessions)
     
     def _on_connection_selected(self, profile_name: str):
         """Handle connection selection"""
         pass
+    
+    def _on_session_connection_changed(self, session_name: str):
+        """Handle session connection change - update tree view"""
+        # Save sessions to ensure connection change is persisted
+        self.config_manager.save_sessions(list(self.sessions.values()))
+        # Update connection tree to reflect new grouping
+        self.connection_tree.update_connections(self.connections, self.sessions)
     
     def _start_all_sessions(self):
         """Start all sessions"""
