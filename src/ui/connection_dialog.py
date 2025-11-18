@@ -15,7 +15,7 @@ class ConnectionDialog(QDialog):
     def __init__(self, parent=None, profile: ConnectionProfile = None):
         """Initialize dialog"""
         super().__init__(parent)
-        self.setWindowTitle("Forbindelsesprofil" if not profile else "Rediger forbindelsesprofil")
+        self.setWindowTitle("Connection Profile" if not profile else "Edit Connection Profile")
         self.setModal(True)
         self.setMinimumWidth(500)
         self.profile = profile
@@ -61,7 +61,7 @@ class ConnectionDialog(QDialog):
         # Store as instance variables
         self.tcp_name = QLineEdit()
         self.tcp_name.setPlaceholderText("fx. PLC1")
-        layout.addRow("Navn:", self.tcp_name)
+        layout.addRow("Name:", self.tcp_name)
         
         self.tcp_host = QLineEdit()
         self.tcp_host.setPlaceholderText("192.168.1.100")
@@ -75,13 +75,13 @@ class ConnectionDialog(QDialog):
         self.tcp_timeout = QSpinBox()
         self.tcp_timeout.setRange(1, 60)
         self.tcp_timeout.setValue(3)
-        self.tcp_timeout.setSuffix(" sek")
+        self.tcp_timeout.setSuffix(" sec")
         layout.addRow("Timeout:", self.tcp_timeout)
         
         self.tcp_retries = QSpinBox()
         self.tcp_retries.setRange(0, 10)
         self.tcp_retries.setValue(3)
-        layout.addRow("Forsøg:", self.tcp_retries)
+        layout.addRow("Retries:", self.tcp_retries)
         
         return widget
     
@@ -93,12 +93,12 @@ class ConnectionDialog(QDialog):
         # Store as instance variables
         self.rtu_name = QLineEdit()
         self.rtu_name.setPlaceholderText("fx. RS485 Bus")
-        layout.addRow("Navn:", self.rtu_name)
+        layout.addRow("Name:", self.rtu_name)
         
         # COM port selection
         self.rtu_port = QComboBox()
         self._refresh_com_ports()
-        refresh_btn = QPushButton("Opdater")
+        refresh_btn = QPushButton("Refresh")
         refresh_btn.clicked.connect(self._refresh_com_ports)
         port_layout = QHBoxLayout()
         port_layout.addWidget(self.rtu_port)

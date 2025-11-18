@@ -27,10 +27,10 @@ class StatusBar(QLabel):
             }
         """)
         # Set initial text to calculate size
-        self.setText("Klar")
+        self.setText("Ready")
         # Set initial size constraints based on content
         self._update_size_constraints()
-        self.update_status("Klar")
+        self.update_status("Ready")
     
     def _update_size_constraints(self):
         """Update size constraints based on current content"""

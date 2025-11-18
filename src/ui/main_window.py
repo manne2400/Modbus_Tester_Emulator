@@ -111,59 +111,59 @@ class MainWindow(QMainWindow):
         self._create_toolbar()
         
         # Status bar
-        self.statusBar().showMessage("Klar")
+        self.statusBar().showMessage("Ready")
     
     def _create_menu_bar(self):
         """Create menu bar"""
         menubar = self.menuBar()
         
         # File menu
-        file_menu = menubar.addMenu("Filer")
+        file_menu = menubar.addMenu("File")
         
-        new_project_action = QAction("Nyt projekt", self)
+        new_project_action = QAction("New Project", self)
         new_project_action.triggered.connect(self._new_project)
         file_menu.addAction(new_project_action)
         
-        open_project_action = QAction("Åbn projekt...", self)
+        open_project_action = QAction("Open Project...", self)
         open_project_action.triggered.connect(self._open_project)
         file_menu.addAction(open_project_action)
         
-        save_project_action = QAction("Gem projekt...", self)
+        save_project_action = QAction("Save Project...", self)
         save_project_action.triggered.connect(self._save_project)
         file_menu.addAction(save_project_action)
         
         file_menu.addSeparator()
         
-        exit_action = QAction("Afslut", self)
+        exit_action = QAction("Exit", self)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         
         # Connection menu
-        connection_menu = menubar.addMenu("Forbindelse")
+        connection_menu = menubar.addMenu("Connection")
         
-        new_connection_action = QAction("Ny forbindelse...", self)
+        new_connection_action = QAction("New Connection...", self)
         new_connection_action.triggered.connect(self._on_new_connection)
         connection_menu.addAction(new_connection_action)
         
         # Session menu
         session_menu = menubar.addMenu("Session")
         
-        new_session_action = QAction("Ny session...", self)
+        new_session_action = QAction("New Session...", self)
         new_session_action.triggered.connect(self._on_new_session)
         session_menu.addAction(new_session_action)
         
-        start_all_action = QAction("Start alle", self)
+        start_all_action = QAction("Start All", self)
         start_all_action.triggered.connect(self._start_all_sessions)
         session_menu.addAction(start_all_action)
         
-        stop_all_action = QAction("Stop alle", self)
+        stop_all_action = QAction("Stop All", self)
         stop_all_action.triggered.connect(self._stop_all_sessions)
         session_menu.addAction(stop_all_action)
         
         # View menu
-        view_menu = menubar.addMenu("Vis")
+        view_menu = menubar.addMenu("View")
         
-        self.show_log_action = QAction("Vis log", self)
+        self.show_log_action = QAction("Show Log", self)
         self.show_log_action.setCheckable(True)
         self.show_log_action.setChecked(False)
         self.show_log_action.triggered.connect(self._toggle_log_viewer)
@@ -177,7 +177,7 @@ class MainWindow(QMainWindow):
         self.multi_view_action.triggered.connect(self._toggle_multi_view)
         view_menu.addAction(self.multi_view_action)
         
-        manage_multi_view_action = QAction("Administrer multi-view...", self)
+        manage_multi_view_action = QAction("Manage Multi-view...", self)
         manage_multi_view_action.triggered.connect(self._manage_multi_view)
         view_menu.addAction(manage_multi_view_action)
         
@@ -188,31 +188,31 @@ class MainWindow(QMainWindow):
         view_menu.addAction(simulator_action)
         
         # Help menu
-        help_menu = menubar.addMenu("Hjælp")
+        help_menu = menubar.addMenu("Help")
         
-        help_action = QAction("Brugervejledning", self)
+        help_action = QAction("User Guide", self)
         help_action.triggered.connect(self._show_help)
         help_menu.addAction(help_action)
         
         help_menu.addSeparator()
         
-        about_action = QAction("Om Modbus Tester", self)
+        about_action = QAction("About Modbus Tester", self)
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
     
     def _create_toolbar(self):
         """Create toolbar"""
-        toolbar = QToolBar("Hovedværktøjslinje")
+        toolbar = QToolBar("Main Toolbar")
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
         
-        new_connection_action = QAction("Ny forbindelse", self)
+        new_connection_action = QAction("New Connection", self)
         new_connection_action.triggered.connect(self._on_new_connection)
         toolbar.addAction(new_connection_action)
         
         toolbar.addSeparator()
         
-        new_session_action = QAction("Ny session", self)
+        new_session_action = QAction("New Session", self)
         new_session_action.triggered.connect(self._on_new_session)
         toolbar.addAction(new_session_action)
     
@@ -409,8 +409,8 @@ class MainWindow(QMainWindow):
         """Create new project"""
         reply = QMessageBox.question(
             self,
-            "Nyt projekt",
-            "Dette vil slette alle nuværende forbindelser og sessions. Fortsæt?",
+            "New Project",
+            "This will delete all current connections and sessions. Continue?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
@@ -435,7 +435,7 @@ class MainWindow(QMainWindow):
         from PyQt6.QtWidgets import QFileDialog
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Åbn projekt",
+            "Open Project",
             "",
             "JSON Files (*.json)"
         )
@@ -489,7 +489,7 @@ class MainWindow(QMainWindow):
         from PyQt6.QtWidgets import QFileDialog
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Gem projekt",
+            "Save Project",
             "",
             "JSON Files (*.json)"
         )
@@ -502,7 +502,7 @@ class MainWindow(QMainWindow):
                 self.multi_view_groups,
                 self.multi_view_active
             )
-            QMessageBox.information(self, "Projekt gemt", f"Projekt gemt til {file_path}")
+            QMessageBox.information(self, "Project Saved", f"Project saved to {file_path}")
     
     def _on_new_connection(self):
         """Handle new connection request"""
@@ -545,8 +545,8 @@ class MainWindow(QMainWindow):
         """Handle delete connection request"""
         reply = QMessageBox.question(
             self,
-            "Slet forbindelse",
-            f"Er du sikker på at du vil slette '{profile_name}'?",
+            "Delete Connection",
+            f"Are you sure you want to delete '{profile_name}'?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
@@ -563,7 +563,7 @@ class MainWindow(QMainWindow):
     def _on_new_session(self):
         """Handle new session request"""
         if not self.connections:
-            QMessageBox.warning(self, "Ingen forbindelse", "Opret først en forbindelse.")
+            QMessageBox.warning(self, "No Connection", "Please create a connection first.")
             return
         
         # Create default session

@@ -19,7 +19,7 @@ class ConnectionTree(QTreeWidget):
     def __init__(self):
         """Initialize connection tree"""
         super().__init__()
-        self.setHeaderLabel("Forbindelser")
+        self.setHeaderLabel("Connections")
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
         self.itemDoubleClicked.connect(self._on_item_double_clicked)
@@ -44,7 +44,7 @@ class ConnectionTree(QTreeWidget):
         # If multi-view is active, show multi-view groups first
         if multi_view_active and multi_view_groups:
             multi_view_group = QTreeWidgetItem(self)
-            multi_view_group.setText(0, "Multi-view Grupper")
+            multi_view_group.setText(0, "Multi-view Groups")
             multi_view_group.setData(0, Qt.ItemDataRole.UserRole, ("multi_view_group", ""))
             # Make group item bold
             font = multi_view_group.font(0)
@@ -161,21 +161,21 @@ class ConnectionTree(QTreeWidget):
                     self.multi_view_group_selected.emit(item_name)
                 elif item_type == "type_group":
                     # Group level menu - can add new connection of this type
-                    new_connection_action = menu.addAction("Ny forbindelse")
+                    new_connection_action = menu.addAction("New Connection")
                     new_connection_action.triggered.connect(
                         lambda: self.new_connection_requested.emit()
                     )
                 elif item_type == "connection":
-                    new_session_action = menu.addAction("Ny session")
+                    new_session_action = menu.addAction("New Session")
                     new_session_action.triggered.connect(
                         lambda: self.new_session_requested.emit()
                     )
                     menu.addSeparator()
-                    edit_action = menu.addAction("Rediger")
+                    edit_action = menu.addAction("Edit")
                     edit_action.triggered.connect(
                         lambda: self.edit_connection_requested.emit(item_name)
                     )
-                    delete_action = menu.addAction("Slet")
+                    delete_action = menu.addAction("Delete")
                     delete_action.triggered.connect(
                         lambda: self.delete_connection_requested.emit(item_name)
                     )
@@ -184,7 +184,7 @@ class ConnectionTree(QTreeWidget):
                     pass
         else:
             # Root level menu
-            new_connection_action = menu.addAction("Ny forbindelse")
+            new_connection_action = menu.addAction("New Connection")
             new_connection_action.triggered.connect(
                 lambda: self.new_connection_requested.emit()
             )

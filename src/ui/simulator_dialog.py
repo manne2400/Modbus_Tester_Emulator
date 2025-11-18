@@ -50,7 +50,7 @@ class SimulatorDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.addStretch()
         
-        close_btn = QPushButton("Luk")
+        close_btn = QPushButton("Close")
         close_btn.clicked.connect(self.accept)
         button_layout.addWidget(close_btn)
         
@@ -61,7 +61,7 @@ class SimulatorDialog(QDialog):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         
-        group = QGroupBox("TCP Simulator Indstillinger")
+        group = QGroupBox("TCP Simulator Settings")
         form = QFormLayout()
         
         self.tcp_host = QLineEdit("127.0.0.1")
@@ -98,7 +98,7 @@ class SimulatorDialog(QDialog):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         
-        group = QGroupBox("RTU Simulator Indstillinger")
+        group = QGroupBox("RTU Simulator Settings")
         form = QFormLayout()
         
         # Port selection
@@ -223,12 +223,12 @@ class SimulatorDialog(QDialog):
     def _update_status(self):
         """Update status label"""
         if not self.simulator_manager:
-            self.status_label.setText("Simulator manager ikke tilgængelig")
+            self.status_label.setText("Simulator manager not available")
             self.status_label.setStyleSheet("padding: 10px; color: #666;")
             return
         
-        tcp_status = "Kører" if self.simulator_manager.is_tcp_running() else "Stoppet"
-        rtu_status = "Kører" if self.simulator_manager.is_rtu_running() else "Stoppet"
+        tcp_status = "Running" if self.simulator_manager.is_tcp_running() else "Stopped"
+        rtu_status = "Running" if self.simulator_manager.is_rtu_running() else "Stopped"
         
         status_text = f"TCP: {tcp_status} | RTU: {rtu_status}"
         self.status_label.setText(status_text)

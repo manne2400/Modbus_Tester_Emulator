@@ -35,14 +35,14 @@ class MultiViewDialog(QDialog):
         
         # Instructions
         info_label = QLabel(
-            "Opret grupper af sessions der skal vises side om side.\n"
-            "Hver gruppe vises i sin egen kolonne i multi-view mode."
+            "Create groups of sessions that should be displayed side by side.\n"
+            "Each group is displayed in its own column in multi-view mode."
         )
         info_label.setWordWrap(True)
         layout.addWidget(info_label)
         
         # Groups list
-        groups_label = QLabel("Grupper:")
+        groups_label = QLabel("Groups:")
         layout.addWidget(groups_label)
         
         self.groups_list = QListWidget()
@@ -52,11 +52,11 @@ class MultiViewDialog(QDialog):
         # Group buttons
         group_buttons_layout = QHBoxLayout()
         
-        self.new_group_btn = QPushButton("Ny gruppe")
+        self.new_group_btn = QPushButton("New Group")
         self.new_group_btn.clicked.connect(self._new_group)
         group_buttons_layout.addWidget(self.new_group_btn)
         
-        self.delete_group_btn = QPushButton("Slet gruppe")
+        self.delete_group_btn = QPushButton("Delete Group")
         self.delete_group_btn.clicked.connect(self._delete_group)
         group_buttons_layout.addWidget(self.delete_group_btn)
         
@@ -64,7 +64,7 @@ class MultiViewDialog(QDialog):
         layout.addLayout(group_buttons_layout)
         
         # Sessions in group
-        sessions_label = QLabel("Sessions i valgt gruppe:")
+        sessions_label = QLabel("Sessions in selected group:")
         layout.addWidget(sessions_label)
         
         self.sessions_list = QListWidget()
@@ -73,11 +73,11 @@ class MultiViewDialog(QDialog):
         # Session buttons
         session_buttons_layout = QHBoxLayout()
         
-        self.add_session_btn = QPushButton("Tilføj session")
+        self.add_session_btn = QPushButton("Add Session")
         self.add_session_btn.clicked.connect(self._add_session_to_group)
         session_buttons_layout.addWidget(self.add_session_btn)
         
-        self.remove_session_btn = QPushButton("Fjern session")
+        self.remove_session_btn = QPushButton("Remove Session")
         self.remove_session_btn.clicked.connect(self._remove_session_from_group)
         session_buttons_layout.addWidget(self.remove_session_btn)
         
@@ -88,7 +88,7 @@ class MultiViewDialog(QDialog):
         buttons_layout = QHBoxLayout()
         buttons_layout.addStretch()
         
-        cancel_btn = QPushButton("Annuller")
+        cancel_btn = QPushButton("Cancel")
         cancel_btn.clicked.connect(self.reject)
         buttons_layout.addWidget(cancel_btn)
         
@@ -133,13 +133,13 @@ class MultiViewDialog(QDialog):
         """Create a new group"""
         name, ok = QInputDialog.getText(
             self,
-            "Ny gruppe",
-            "Indtast gruppenavn:",
-            text=f"Gruppe {len(self.groups) + 1}"
+            "New Group",
+            "Enter group name:",
+            text=f"Group {len(self.groups) + 1}"
         )
         if ok and name:
             if name in self.groups:
-                QMessageBox.warning(self, "Fejl", f"Gruppen '{name}' findes allerede.")
+                QMessageBox.warning(self, "Error", f"Group '{name}' already exists.")
                 return
             self.groups[name] = []
             self._update_group_list()
@@ -189,8 +189,8 @@ class MultiViewDialog(QDialog):
         # Let user select session
         session, ok = QInputDialog.getItem(
             self,
-            "Tilføj session",
-            "Vælg session:",
+            "Add Session",
+            "Select session:",
             available,
             0,
             False

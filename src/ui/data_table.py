@@ -13,7 +13,7 @@ class DataTable(QTableWidget):
         super().__init__()
         self.setColumnCount(7)
         self.setHorizontalHeaderLabels([
-            "Adresse", "Navn", "Rå værdi", "HEX", "Skaleret værdi", "Enhed", "Status"
+            "Address", "Name", "Raw Value", "HEX", "Scaled Value", "Unit", "Status"
         ])
         self.setAlternatingRowColors(True)
         self.setEditTriggers(QTableWidget.EditTrigger.DoubleClicked)

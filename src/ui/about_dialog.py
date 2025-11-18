@@ -11,7 +11,7 @@ class AboutDialog(QDialog):
     def __init__(self, parent=None):
         """Initialize about dialog"""
         super().__init__(parent)
-        self.setWindowTitle("Om Modbus Tester")
+        self.setWindowTitle("About Modbus Tester")
         self.setModal(True)
         self.setFixedSize(500, 400)
         
@@ -42,17 +42,17 @@ class AboutDialog(QDialog):
         description.setReadOnly(True)
         description.setMaximumHeight(200)
         description.setHtml("""
-        <p><b>Modbus Master/Simulator Desktop Applikation</b></p>
-        <p>En professionel værktøj til test af Modbus RTU og TCP/IP forbindelser.</p>
-        <p><b>Funktioner:</b></p>
+        <p><b>Modbus Master/Simulator Desktop Application</b></p>
+        <p>A professional tool for testing Modbus RTU and TCP/IP connections.</p>
+        <p><b>Features:</b></p>
         <ul>
-            <li>Modbus RTU (RS-485/RS-232) og Modbus TCP/IP</li>
-            <li>Flere parallelle sessions</li>
-            <li>Læs/skriv coils, discrete inputs, input registers og holding registers</li>
-            <li>Omfattende fejlsøgning med hexdump og logging</li>
-            <li>Real-time data visning</li>
+            <li>Modbus RTU (RS-485/RS-232) and Modbus TCP/IP</li>
+            <li>Multiple parallel sessions</li>
+            <li>Read/write coils, discrete inputs, input registers and holding registers</li>
+            <li>Comprehensive debugging with hexdump and logging</li>
+            <li>Real-time data display</li>
         </ul>
-        <p><b>Teknologi:</b></p>
+        <p><b>Technology:</b></p>
         <ul>
             <li>Python 3.10+</li>
             <li>PyQt6</li>
@@ -63,6 +63,6 @@ class AboutDialog(QDialog):
         layout.addWidget(description)
         
         # Close button
-        close_btn = QPushButton("Luk")
+        close_btn = QPushButton("Close")
         close_btn.clicked.connect(self.accept)
         layout.addWidget(close_btn)

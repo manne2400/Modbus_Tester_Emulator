@@ -156,7 +156,7 @@
     }
   ],
   "multi_view": {
-    "active": true,
+    "active": false,
     "groups": {
       "Gruppe 1": [
         "Session 1"

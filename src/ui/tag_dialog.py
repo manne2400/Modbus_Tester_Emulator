@@ -14,7 +14,7 @@ class TagDialog(QDialog):
     def __init__(self, parent=None, tag: TagDefinition = None, address_type: AddressType = None):
         """Initialize tag dialog"""
         super().__init__(parent)
-        self.setWindowTitle("Rediger Tag" if tag else "Ny Tag")
+        self.setWindowTitle("Edit Tag" if tag else "New Tag")
         self.setModal(True)
         self.setMinimumWidth(500)
         self.tag = tag
@@ -31,29 +31,29 @@ class TagDialog(QDialog):
         layout = QVBoxLayout(self)
         
         # Basic info group
-        basic_group = QGroupBox("Grundlæggende Information")
+        basic_group = QGroupBox("Basic Information")
         form = QFormLayout()
         
         # Address type
         self.address_type_combo = QComboBox()
         self.address_type_combo.addItems([at.value for at in AddressType])
-        form.addRow("Adressetype:", self.address_type_combo)
+        form.addRow("Address Type:", self.address_type_combo)
         
         # Address
         self.address_spin = QSpinBox()
         self.address_spin.setRange(0, 65535)
-        form.addRow("Adresse:", self.address_spin)
+        form.addRow("Address:", self.address_spin)
         
         # Name
         self.name_edit = QLineEdit()
-        self.name_edit.setPlaceholderText("fx. Temperature, Pressure, etc.")
-        form.addRow("Navn:", self.name_edit)
+        self.name_edit.setPlaceholderText("e.g. Temperature, Pressure, etc.")
+        form.addRow("Name:", self.name_edit)
         
         basic_group.setLayout(form)
         layout.addWidget(basic_group)
         
         # Data type group
-        data_group = QGroupBox("Datatype og Byte Order")
+        data_group = QGroupBox("Data Type and Byte Order")
         data_form = QFormLayout()
         
         # Data type
@@ -68,7 +68,7 @@ class TagDialog(QDialog):
         ]
         self.data_type_combo.addItems(data_type_items)
         self.data_type_combo.setCurrentText("UINT16 - 16-bit unsigned integer (1 register)")
-        data_form.addRow("Datatype:", self.data_type_combo)
+        data_form.addRow("Data Type:", self.data_type_combo)
         
         # Byte order
         self.byte_order_combo = QComboBox()
@@ -80,7 +80,7 @@ class TagDialog(QDialog):
         layout.addWidget(data_group)
         
         # Scaling group
-        scaling_group = QGroupBox("Skalering (valgfrit)")
+        scaling_group = QGroupBox("Scaling (optional)")
         scaling_form = QFormLayout()
         
         # Scale factor
@@ -88,7 +88,7 @@ class TagDialog(QDialog):
         self.scale_factor_spin.setRange(-1000000.0, 1000000.0)
         self.scale_factor_spin.setValue(1.0)
         self.scale_factor_spin.setDecimals(6)
-        scaling_form.addRow("Skaleringsfaktor:", self.scale_factor_spin)
+        scaling_form.addRow("Scale Factor:", self.scale_factor_spin)
         
         # Scale offset
         self.scale_offset_spin = QDoubleSpinBox()
@@ -99,8 +99,8 @@ class TagDialog(QDialog):
         
         # Unit
         self.unit_edit = QLineEdit()
-        self.unit_edit.setPlaceholderText("fx. °C, bar, %, etc.")
-        scaling_form.addRow("Enhed:", self.unit_edit)
+        self.unit_edit.setPlaceholderText("e.g. °C, bar, %, etc.")
+        scaling_form.addRow("Unit:", self.unit_edit)
         
         scaling_group.setLayout(scaling_form)
         layout.addWidget(scaling_group)

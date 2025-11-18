@@ -66,7 +66,7 @@ class SessionTab(QWidget):
         if index >= 0:
             self.connection_combo.setCurrentIndex(index)
         self.connection_combo.currentIndexChanged.connect(self._on_connection_changed)
-        left_form.addRow("Forbindelse:", self.connection_combo)
+        left_form.addRow("Connection:", self.connection_combo)
         
         # Slave ID
         self.slave_id_spin = QSpinBox()
@@ -101,14 +101,14 @@ class SessionTab(QWidget):
         self.address_spin.setRange(0, 65535)
         self.address_spin.setValue(self.session.start_address)
         self.address_spin.valueChanged.connect(self._on_address_changed)
-        right_form.addRow("Startadresse:", self.address_spin)
+        right_form.addRow("Start Address:", self.address_spin)
         
         # Quantity
         self.quantity_spin = QSpinBox()
         self.quantity_spin.setRange(1, 2000)
         self.quantity_spin.setValue(self.session.quantity)
         self.quantity_spin.valueChanged.connect(self._on_quantity_changed)
-        right_form.addRow("Antal:", self.quantity_spin)
+        right_form.addRow("Quantity:", self.quantity_spin)
         
         # Poll interval
         self.interval_spin = QSpinBox()
@@ -116,7 +116,7 @@ class SessionTab(QWidget):
         self.interval_spin.setValue(self.session.poll_interval_ms)
         self.interval_spin.setSuffix(" ms")
         self.interval_spin.valueChanged.connect(self._on_interval_changed)
-        right_form.addRow("Poll-interval:", self.interval_spin)
+        right_form.addRow("Poll Interval:", self.interval_spin)
         
         right_widget = QWidget()
         right_widget.setLayout(right_form)
@@ -154,7 +154,7 @@ class SessionTab(QWidget):
         # Tags button
         tags_layout = QHBoxLayout()
         tags_layout.addStretch()
-        self.tags_btn = QPushButton("Administrer Tags...")
+        self.tags_btn = QPushButton("Manage Tags...")
         self.tags_btn.clicked.connect(self._manage_tags)
         tags_layout.addWidget(self.tags_btn)
         layout.addLayout(tags_layout)
@@ -208,7 +208,7 @@ class SessionTab(QWidget):
     def _manage_tags(self):
         """Open tag management dialog"""
         dialog = QDialog(self)
-        dialog.setWindowTitle("Administrer Tags")
+        dialog.setWindowTitle("Manage Tags")
         dialog.setModal(True)
         dialog.setMinimumSize(600, 500)
         
@@ -220,7 +220,7 @@ class SessionTab(QWidget):
         
         # Populate list
         for tag in self.session.tags:
-            item_text = f"{tag.name} - Adr: {tag.address}, Type: {tag.data_type.value}"
+            item_text = f"{tag.name} - Addr: {tag.address}, Type: {tag.data_type.value}"
             item = QListWidgetItem(item_text)
             item.setData(Qt.ItemDataRole.UserRole, tag)
             tags_list.addItem(item)
@@ -230,21 +230,21 @@ class SessionTab(QWidget):
         # Buttons
         buttons_layout = QHBoxLayout()
         
-        add_btn = QPushButton("Tilføj Tag")
+        add_btn = QPushButton("Add Tag")
         add_btn.clicked.connect(lambda: self._add_tag(dialog, tags_list))
         buttons_layout.addWidget(add_btn)
         
-        edit_btn = QPushButton("Rediger")
+        edit_btn = QPushButton("Edit")
         edit_btn.clicked.connect(lambda: self._edit_tag(dialog, tags_list))
         buttons_layout.addWidget(edit_btn)
         
-        delete_btn = QPushButton("Slet")
+        delete_btn = QPushButton("Delete")
         delete_btn.clicked.connect(lambda: self._delete_tag(tags_list))
         buttons_layout.addWidget(delete_btn)
         
         buttons_layout.addStretch()
         
-        close_btn = QPushButton("Luk")
+        close_btn = QPushButton("Close")
         close_btn.clicked.connect(dialog.accept)
         buttons_layout.addWidget(close_btn)
         
@@ -276,7 +276,7 @@ class SessionTab(QWidget):
                 self.config_manager.save_sessions([self.session])
             
             # Refresh list
-            item_text = f"{tag.name} - Adr: {tag.address}, Type: {tag.data_type.value}"
+            item_text = f"{tag.name} - Addr: {tag.address}, Type: {tag.data_type.value}"
             item = QListWidgetItem(item_text)
             item.setData(Qt.ItemDataRole.UserRole, tag)
             tags_list.addItem(item)
@@ -309,13 +309,13 @@ class SessionTab(QWidget):
         """Delete selected tag"""
         current_item = tags_list.currentItem()
         if not current_item:
-            QMessageBox.warning(self, "Ingen tag valgt", "Vælg en tag at slette.")
+            QMessageBox.warning(self, "No tag selected", "Please select a tag to delete.")
             return
         
         reply = QMessageBox.question(
             self,
-            "Slet tag",
-            "Er du sikker på at du vil slette denne tag?",
+            "Delete tag",
+            "Are you sure you want to delete this tag?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
@@ -402,7 +402,7 @@ class SessionTab(QWidget):
                 }
             """)
         elif self.session.status == SessionStatus.ERROR:
-            self.status_bar.update_status("Fejl", error=True)
+            self.status_bar.update_status("Error", error=True)
             self.start_stop_btn.setText("Start")
             self.start_stop_btn.setStyleSheet("""
                 QPushButton {
