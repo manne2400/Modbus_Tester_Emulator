@@ -37,10 +37,57 @@ class HelpDialog(QDialog):
             <li>Klik på <b>"Start TCP Simulator"</b> eller <b>"Start RTU Simulator"</b></li>
             <li>Simulatoren kører nu i baggrunden og kan bruges til test</li>
         </ul>
+        
+        <p><b>Vigtigt for RTU test:</b></p>
+        <p>For at teste RTU forbindelser skal du først oprette et virtuelt COM-port par med en serial port emulator:</p>
+        <ul>
+            <li><b>Download og installer en serial port emulator:</b>
+                <ul>
+                    <li><b>com0com</b> (gratis, open source) - Download fra: https://sourceforge.net/projects/com0com/</li>
+                    <li><b>Virtual Serial Port Driver</b> (betalingsløsning, signerede drivers) - Download fra: https://www.virtual-serial-port.org/</li>
+                    <li>Eller en anden serial port emulator efter eget valg</li>
+                </ul>
+            </li>
+            <li><b>Opret et COM-port par:</b>
+                <ul>
+                    <li>Efter installation, åbn emulator programmet</li>
+                    <li>Opret et par af virtuelle COM-porte (fx COM10 ↔ COM11)</li>
+                    <li>Disse porte vil fungere som om de er forbundet med et kabel</li>
+                </ul>
+            </li>
+            <li><b>Brug COM-port parret:</b>
+                <ul>
+                    <li>Start RTU simulatoren på den ene port (fx COM10) via <b>Vis → Modbus Simulator...</b></li>
+                    <li>Opret en RTU forbindelse i appen til den anden port (fx COM11)</li>
+                    <li>Nu kan du teste RTU kommunikation mellem simulator og applikation</li>
+                </ul>
+            </li>
+            <li><b>Bemærk:</b> Hvis du får Code 52 fejl med com0com, skal du muligvis deaktivere driver signature enforcement i Windows (se "Fejlsøgning" tab)</li>
+        </ul>
         <p><b>Testdata i simulatoren:</b></p>
         <ul>
             <li>Holding registers (0-9): 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000</li>
+            <li>Holding registers (20-31): DINT (INT32) test værdier:
+                <ul>
+                    <li>Address 20-21: 1,000,000</li>
+                    <li>Address 22-23: -500,000</li>
+                    <li>Address 24-25: 2,147,483,647 (MAX INT32)</li>
+                    <li>Address 26-27: -2,147,483,648 (MIN INT32)</li>
+                    <li>Address 28-29: 12,345</li>
+                    <li>Address 30-31: -12,345</li>
+                </ul>
+            </li>
             <li>Input registers (0-9): 50, 150, 250, 350, 450, 550, 650, 750, 850, 950</li>
+            <li>Input registers (20-31): DINT (INT32) test værdier:
+                <ul>
+                    <li>Address 20-21: 50,000</li>
+                    <li>Address 22-23: -25,000</li>
+                    <li>Address 24-25: 100,000</li>
+                    <li>Address 26-27: -100,000</li>
+                    <li>Address 28-29: 999,999</li>
+                    <li>Address 30-31: -999,999</li>
+                </ul>
+            </li>
             <li>Coils (0-9): True, False, True, False, True, False, True, False, True, False</li>
             <li>Discrete inputs (0-9): False, True, False, True, False, True, False, True, False, True</li>
             <li>Slave ID: 1</li>
@@ -78,19 +125,39 @@ class HelpDialog(QDialog):
             <li><b>Poll-interval:</b> Hvor ofte data skal læses (i millisekunder, fx 1000)</li>
         </ul>
         
-        <h3>4. Start polling</h3>
+        <h3>4. Administrer Tags (valgfrit)</h3>
+        <p>For at få navne, datatyper og skalering på dine data:</p>
+        <ul>
+            <li>Klik på <b>"Administrer Tags..."</b> knappen i session tab'en</li>
+            <li>Klik på <b>"Tilføj Tag"</b> for at oprette en ny tag</li>
+            <li>Konfigurer tag'en:
+                <ul>
+                    <li><b>Adressetype:</b> Skal matche session's function code (Holding Register for function 03, Input Register for function 04)</li>
+                    <li><b>Adresse:</b> Register adressen</li>
+                    <li><b>Navn:</b> Et beskrivende navn (fx "Temperature")</li>
+                    <li><b>Datatype:</b> Vælg datatype (UINT16, INT16, INT32/DINT, UINT32, FLOAT32, BOOL)</li>
+                    <li><b>Byte Order:</b> Big Endian (standard), Little Endian, eller Swapped</li>
+                    <li><b>Skalering:</b> Skaleringsfaktor og offset (valgfrit)</li>
+                    <li><b>Enhed:</b> Enhedsbetegnelse (fx "°C", "bar", "%")</li>
+                </ul>
+            </li>
+            <li><b>Vigtigt:</b> Tags med forkert address_type vil blive ignoreret. Sørg for at address_type matcher function code!</li>
+        </ul>
+        
+        <h3>5. Start polling</h3>
         <p>Klik på <b>"Start"</b> knappen i session tab'en for at begynde at læse data.</p>
         <p>Data vil blive vist i tabellen nedenfor med:</p>
         <ul>
-            <li>Adresse</li>
-            <li>Navn (hvis tags er defineret)</li>
-            <li>Rå værdi</li>
-            <li>Skaleret værdi</li>
-            <li>Enhed</li>
-            <li>Status (OK, Timeout, Error, etc.)</li>
+            <li><b>Adresse:</b> Register adressen</li>
+            <li><b>Navn:</b> Tag navn (hvis defineret) eller "Address X"</li>
+            <li><b>Rå værdi:</b> Den rå værdi fra Modbus (efter datatype dekodning)</li>
+            <li><b>HEX:</b> Hexadecimal repræsentation af værdien</li>
+            <li><b>Skaleret værdi:</b> Værdien efter skalering (hvis tag har skalering)</li>
+            <li><b>Enhed:</b> Enhedsbetegnelse fra tag (fx "°C")</li>
+            <li><b>Status:</b> OK, Timeout, Error, etc.</li>
         </ul>
         
-        <h3>5. Multi-view (valgfrit)</h3>
+        <h3>6. Multi-view (valgfrit)</h3>
         <p>For at se flere sessions samtidig side om side:</p>
         <ul>
             <li>Gå til <b>Vis → Administrer multi-view...</b></li>
@@ -132,6 +199,19 @@ class HelpDialog(QDialog):
             <li>Holding Registers: 40001-49999 (0-9998 i applikationen)</li>
             <li>Input Registers: 30001-39999 (0-9998 i applikationen)</li>
         </ul>
+        
+        <h3>Datatyper:</h3>
+        <p>Applikationen understøtter følgende datatyper:</p>
+        <table border="1" cellpadding="5">
+        <tr><th>Datatype</th><th>Beskrivelse</th><th>Registre</th></tr>
+        <tr><td>BOOL</td><td>Boolean (1 bit)</td><td>1 bit</td></tr>
+        <tr><td>UINT16</td><td>16-bit unsigned integer</td><td>1 register</td></tr>
+        <tr><td>INT16</td><td>16-bit signed integer</td><td>1 register</td></tr>
+        <tr><td>UINT32</td><td>32-bit unsigned integer</td><td>2 registre</td></tr>
+        <tr><td>INT32 (DINT)</td><td>32-bit signed integer (også kaldet DINT)</td><td>2 registre</td></tr>
+        <tr><td>FLOAT32</td><td>32-bit floating point</td><td>2 registre</td></tr>
+        </table>
+        <p><b>Vigtigt:</b> Multi-register typer (INT32, UINT32, FLOAT32) bruger 2 registre. Sørg for at læse nok registre!</p>
         """)
         tabs.addTab(function_codes, "Function Codes")
         
@@ -156,8 +236,29 @@ class HelpDialog(QDialog):
             <li>Tjek at porten ikke bruges af et andet program</li>
             <li>Tjek baudrate, parity, stop bits matcher enheden</li>
             <li>Prøv at genstarte computeren hvis porten er låst</li>
-            <li>For simulator: Start RTU simulatoren på én port (fx COM10) og forbind fra appen til den anden (fx COM11)</li>
-            <li>Hvis du får Code 52 fejl, skal du muligvis deaktivere driver signature enforcement i Windows</li>
+            <li><b>For simulator:</b> Du skal først oprette et COM-port par med en serial port emulator (fx com0com):
+                <ul>
+                    <li>Opret et par (fx COM10 ↔ COM11)</li>
+                    <li>Start RTU simulatoren på én port (fx COM10) via <b>Vis → Modbus Simulator...</b></li>
+                    <li>Forbind fra appen til den anden port (fx COM11)</li>
+                </ul>
+            </li>
+            <li>Hvis du får Code 52 fejl med com0com, skal du muligvis deaktivere driver signature enforcement i Windows (se nedenfor)</li>
+        </ul>
+        
+        <p><b>Code 52 fejl (com0com):</b></p>
+        <ul>
+            <li>Dette sker når Windows ikke kan verificere driver signaturen</li>
+            <li><b>Løsning 1:</b> Deaktiver driver signature enforcement:
+                <ul>
+                    <li>Windows + I → System → Recovery → Advanced startup → Restart now</li>
+                    <li>Troubleshoot → Advanced options → Startup Settings → Restart</li>
+                    <li>Tryk 7 eller F7 for "Disable driver signature enforcement"</li>
+                    <li>Efter genstart: Højreklik på com0com enheder i Device Manager → Update driver</li>
+                </ul>
+            </li>
+            <li><b>Løsning 2:</b> Brug Virtual Serial Port Driver (betalingsløsning med signerede drivers)</li>
+            <li><b>Løsning 3:</b> Test med fysisk RTU udstyr i stedet for simulator</li>
         </ul>
         
         <h3>Simulator problemer</h3>
@@ -193,6 +294,29 @@ class HelpDialog(QDialog):
             <li>Forkert adresse (exception code 02)</li>
             <li>Forkert værdi (exception code 03)</li>
             <li>Server fejl (exception code 04)</li>
+        </ul>
+        
+        <h3>Tag problemer</h3>
+        <p><b>Tags vises ikke i tabellen:</b></p>
+        <ul>
+            <li>Tjek at tag's address_type matcher session's function code:
+                <ul>
+                    <li>Function 03 (Read Holding Registers) → address_type skal være "Holding Register"</li>
+                    <li>Function 04 (Read Input Registers) → address_type skal være "Input Register"</li>
+                    <li>Function 01 (Read Coils) → address_type skal være "Coil"</li>
+                    <li>Function 02 (Read Discrete Inputs) → address_type skal være "Discrete Input"</li>
+                </ul>
+            </li>
+            <li>Hvis ingen tags matcher, vises rå data i stedet</li>
+            <li>Tjek at tag adressen er inden for session's startadresse og antal</li>
+            <li>For INT32/UINT32/FLOAT32 tags: Sørg for at session læser nok registre (minimum tag.address + 1)</li>
+        </ul>
+        
+        <p><b>INT32/DINT værdier ser forkerte ud:</b></p>
+        <ul>
+            <li>Tjek at Byte Order er korrekt (Big Endian er standard)</li>
+            <li>Tjek at session læser nok registre (INT32 bruger 2 registre)</li>
+            <li>Tjek at tag adressen er korrekt (INT32 starter ved tag.address og bruger også tag.address+1)</li>
         </ul>
         
         <h3>Multi-view problemer</h3>
@@ -240,6 +364,17 @@ class HelpDialog(QDialog):
             <li>Brug multi-view til at overvåge flere enheder samtidig</li>
         </ul>
         
+        <h3>Tags og Datatyper</h3>
+        <ul>
+            <li>Tags giver navne og datatyper til dine Modbus adresser</li>
+            <li>Brug INT32 (DINT) for 32-bit signed integers (2 registre)</li>
+            <li>Brug UINT32 for 32-bit unsigned integers (2 registre)</li>
+            <li>Brug FLOAT32 for floating point værdier (2 registre)</li>
+            <li>HEX kolonnen viser hexadecimal repræsentation af værdien</li>
+            <li>Skalering giver mulighed for at konvertere rå værdier til fysiske enheder (fx temperatur)</li>
+            <li><b>Vigtigt:</b> Tag's address_type SKAL matche session's function code, ellers ignoreres tag'en</li>
+        </ul>
+        
         <h3>Skrivning</h3>
         <ul>
             <li>Dobbeltklik på en værdi i tabellen for at skrive (hvis function code understøtter det)</li>
@@ -252,7 +387,14 @@ class HelpDialog(QDialog):
         <ul>
             <li>Start simulatoren før du opretter forbindelser til den</li>
             <li>TCP simulator kører typisk på port 5020 (ikke standard 502)</li>
-            <li>RTU simulator kræver at COM-porten er tilgængelig</li>
+            <li><b>RTU simulator kræver et COM-port par:</b>
+                <ul>
+                    <li>Du skal først oprette et virtuelt COM-port par med en serial port emulator (fx com0com)</li>
+                    <li>Opret et par (fx COM10 ↔ COM11)</li>
+                    <li>Start simulatoren på den ene port (fx COM10)</li>
+                    <li>Forbind fra appen til den anden port (fx COM11)</li>
+                </ul>
+            </li>
             <li>Simulatoren stopper automatisk når applikationen lukkes</li>
             <li>Du kan have både TCP og RTU simulator kørende samtidig</li>
         </ul>

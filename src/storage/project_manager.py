@@ -1,7 +1,7 @@
 """Project manager for saving/loading complete projects"""
 import json
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 from src.models.connection_profile import ConnectionProfile
 from src.models.session_definition import SessionDefinition
 from src.storage.config_manager import ConfigManager
@@ -21,14 +21,20 @@ class ProjectManager:
         self,
         file_path: Path,
         connections: List[ConnectionProfile],
-        sessions: List[SessionDefinition]
+        sessions: List[SessionDefinition],
+        multi_view_groups: Optional[Dict[str, List[str]]] = None,
+        multi_view_active: bool = False
     ) -> bool:
         """Save complete project to file"""
         try:
             data = {
                 "version": "1.0",
                 "connections": [conn.to_dict() for conn in connections],
-                "sessions": [session.to_dict() for session in sessions]
+                "sessions": [session.to_dict() for session in sessions],
+                "multi_view": {
+                    "active": multi_view_active,
+                    "groups": multi_view_groups or {}
+                }
             }
             
             with open(file_path, 'w', encoding='utf-8') as f:
@@ -49,7 +55,7 @@ class ProjectManager:
     def load_project(
         self,
         file_path: Path
-    ) -> tuple[List[ConnectionProfile], List[SessionDefinition]]:
+    ) -> tuple[List[ConnectionProfile], List[SessionDefinition], Dict[str, List[str]], bool]:
         """Load complete project from file"""
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -65,11 +71,16 @@ class ProjectManager:
                 for session_data in data.get("sessions", [])
             ]
             
-            logger.info(f"Loaded project from {file_path}: {len(connections)} connections, {len(sessions)} sessions")
-            return connections, sessions
+            # Load multi-view configuration (backward compatible)
+            multi_view_data = data.get("multi_view", {})
+            multi_view_groups = multi_view_data.get("groups", {})
+            multi_view_active = multi_view_data.get("active", False)
+            
+            logger.info(f"Loaded project from {file_path}: {len(connections)} connections, {len(sessions)} sessions, multi-view: {multi_view_active}")
+            return connections, sessions, multi_view_groups, multi_view_active
         except Exception as e:
             logger.error(f"Failed to load project: {e}")
-            return [], []
+            return [], [], {}, False
     
     def get_last_project_path(self) -> Optional[Path]:
         """Get path to last opened project"""
@@ -93,7 +104,9 @@ class ProjectManager:
         self,
         file_path: Path,
         connections: List[ConnectionProfile],
-        sessions: List[SessionDefinition]
+        sessions: List[SessionDefinition],
+        multi_view_groups: Optional[Dict[str, List[str]]] = None,
+        multi_view_active: bool = False
     ) -> bool:
         """Export project (same as save, but for sharing)"""
-        return self.save_project(file_path, connections, sessions)
+        return self.save_project(file_path, connections, sessions, multi_view_groups, multi_view_active)

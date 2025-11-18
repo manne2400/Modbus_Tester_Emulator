@@ -13,11 +13,15 @@ class AddressType(Enum):
 
 
 class DataType(Enum):
-    """Data type enumeration"""
+    """Data type enumeration
+    
+    Note: INT32 is also known as DINT (Double Integer) in PLC terminology.
+    Both refer to a 32-bit signed integer using 2 Modbus registers.
+    """
     BOOL = "BOOL"
     INT16 = "INT16"
     UINT16 = "UINT16"
-    INT32 = "INT32"
+    INT32 = "INT32"  # Also known as DINT (Double Integer) - 32-bit signed integer
     UINT32 = "UINT32"
     FLOAT32 = "FLOAT32"
 

@@ -1,7 +1,8 @@
 """Session tab widget"""
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
-    QLabel, QComboBox, QSpinBox, QPushButton, QLineEdit
+    QLabel, QComboBox, QSpinBox, QPushButton, QLineEdit,
+    QListWidget, QListWidgetItem, QMessageBox, QDialog
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from src.models.session_definition import SessionDefinition, SessionStatus
@@ -12,6 +13,8 @@ from src.application.polling_engine import PollingEngine
 from src.protocol.function_codes import FunctionCode, FUNCTION_CODE_NAMES
 from src.ui.data_table import DataTable
 from src.ui.widgets.status_bar import StatusBar
+from src.ui.tag_dialog import TagDialog
+from src.models.tag_definition import TagDefinition, AddressType
 from typing import List
 
 
@@ -26,7 +29,8 @@ class SessionTab(QWidget):
         session: SessionDefinition,
         connections: List[ConnectionProfile],
         session_manager: SessionManager,
-        polling_engine: PollingEngine
+        polling_engine: PollingEngine,
+        config_manager=None
     ):
         """Initialize session tab"""
         super().__init__()
@@ -34,6 +38,7 @@ class SessionTab(QWidget):
         self.connections = connections
         self.session_manager = session_manager
         self.polling_engine = polling_engine
+        self.config_manager = config_manager
         
         self._setup_ui()
         self.update_status()
@@ -146,6 +151,14 @@ class SessionTab(QWidget):
         controls_widget.setMaximumHeight(150)
         layout.addWidget(controls_widget)
         
+        # Tags button
+        tags_layout = QHBoxLayout()
+        tags_layout.addStretch()
+        self.tags_btn = QPushButton("Administrer Tags...")
+        self.tags_btn.clicked.connect(self._manage_tags)
+        tags_layout.addWidget(self.tags_btn)
+        layout.addLayout(tags_layout)
+        
         # Data table
         self.data_table = DataTable()
         layout.addWidget(self.data_table)
@@ -191,7 +204,129 @@ class SessionTab(QWidget):
         """Handle interval change"""
         self.session.poll_interval_ms = value
         # Reset poll timer
-        self.polling_engine.reset_poll_timer(self.session.name)
+    
+    def _manage_tags(self):
+        """Open tag management dialog"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Administrer Tags")
+        dialog.setModal(True)
+        dialog.setMinimumSize(600, 500)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # List of tags
+        tags_list = QListWidget()
+        tags_list.setAlternatingRowColors(True)
+        
+        # Populate list
+        for tag in self.session.tags:
+            item_text = f"{tag.name} - Adr: {tag.address}, Type: {tag.data_type.value}"
+            item = QListWidgetItem(item_text)
+            item.setData(Qt.ItemDataRole.UserRole, tag)
+            tags_list.addItem(item)
+        
+        layout.addWidget(tags_list)
+        
+        # Buttons
+        buttons_layout = QHBoxLayout()
+        
+        add_btn = QPushButton("Tilføj Tag")
+        add_btn.clicked.connect(lambda: self._add_tag(dialog, tags_list))
+        buttons_layout.addWidget(add_btn)
+        
+        edit_btn = QPushButton("Rediger")
+        edit_btn.clicked.connect(lambda: self._edit_tag(dialog, tags_list))
+        buttons_layout.addWidget(edit_btn)
+        
+        delete_btn = QPushButton("Slet")
+        delete_btn.clicked.connect(lambda: self._delete_tag(tags_list))
+        buttons_layout.addWidget(delete_btn)
+        
+        buttons_layout.addStretch()
+        
+        close_btn = QPushButton("Luk")
+        close_btn.clicked.connect(dialog.accept)
+        buttons_layout.addWidget(close_btn)
+        
+        layout.addLayout(buttons_layout)
+        
+        dialog.exec()
+    
+    def _add_tag(self, parent_dialog, tags_list):
+        """Add a new tag"""
+        # Determine address type from function code
+        address_type_map = {
+            FunctionCode.READ_COILS: AddressType.COIL,
+            FunctionCode.READ_DISCRETE_INPUTS: AddressType.DISCRETE_INPUT,
+            FunctionCode.READ_HOLDING_REGISTERS: AddressType.HOLDING_REGISTER,
+            FunctionCode.READ_INPUT_REGISTERS: AddressType.INPUT_REGISTER,
+        }
+        address_type = address_type_map.get(
+            FunctionCode(self.session.function_code),
+            AddressType.HOLDING_REGISTER
+        )
+        
+        tag_dialog = TagDialog(parent_dialog, address_type=address_type)
+        if tag_dialog.exec():
+            tag = tag_dialog.get_tag()
+            self.session.tags.append(tag)
+            self.session_manager.add_session(self.session)
+            # Save to config if available
+            if self.config_manager:
+                self.config_manager.save_sessions([self.session])
+            
+            # Refresh list
+            item_text = f"{tag.name} - Adr: {tag.address}, Type: {tag.data_type.value}"
+            item = QListWidgetItem(item_text)
+            item.setData(Qt.ItemDataRole.UserRole, tag)
+            tags_list.addItem(item)
+    
+    def _edit_tag(self, parent_dialog, tags_list):
+        """Edit selected tag"""
+        current_item = tags_list.currentItem()
+        if not current_item:
+            QMessageBox.warning(parent_dialog, "Ingen tag valgt", "Vælg en tag at redigere.")
+            return
+        
+        tag = current_item.data(Qt.ItemDataRole.UserRole)
+        tag_dialog = TagDialog(parent_dialog, tag=tag)
+        if tag_dialog.exec():
+            new_tag = tag_dialog.get_tag()
+            # Update tag in session
+            index = self.session.tags.index(tag)
+            self.session.tags[index] = new_tag
+            self.session_manager.add_session(self.session)
+            # Save to config if available
+            if self.config_manager:
+                self.config_manager.save_sessions([self.session])
+            
+            # Update list item
+            item_text = f"{new_tag.name} - Adr: {new_tag.address}, Type: {new_tag.data_type.value}"
+            current_item.setText(item_text)
+            current_item.setData(Qt.ItemDataRole.UserRole, new_tag)
+    
+    def _delete_tag(self, tags_list):
+        """Delete selected tag"""
+        current_item = tags_list.currentItem()
+        if not current_item:
+            QMessageBox.warning(self, "Ingen tag valgt", "Vælg en tag at slette.")
+            return
+        
+        reply = QMessageBox.question(
+            self,
+            "Slet tag",
+            "Er du sikker på at du vil slette denne tag?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            tag = current_item.data(Qt.ItemDataRole.UserRole)
+            self.session.tags.remove(tag)
+            self.session_manager.add_session(self.session)
+            # Save to config if available
+            if self.config_manager:
+                self.config_manager.save_sessions([self.session])
+            tags_list.takeItem(tags_list.row(current_item))
     
     def _toggle_polling(self):
         """Toggle polling on/off"""

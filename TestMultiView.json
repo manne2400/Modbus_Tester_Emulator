@@ -154,5 +154,19 @@
       "tags": [],
       "status": "Stopped"
     }
-  ]
+  ],
+  "multi_view": {
+    "active": true,
+    "groups": {
+      "Gruppe 1": [
+        "Session 1"
+      ],
+      "Gruppe 2": [
+        "Session 2"
+      ],
+      "Gruppe 3": [
+        "Session 3"
+      ]
+    }
+  }
 }

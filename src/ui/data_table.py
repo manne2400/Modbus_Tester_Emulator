@@ -11,9 +11,9 @@ class DataTable(QTableWidget):
     def __init__(self):
         """Initialize data table"""
         super().__init__()
-        self.setColumnCount(6)
+        self.setColumnCount(7)
         self.setHorizontalHeaderLabels([
-            "Adresse", "Navn", "Rå værdi", "Skaleret værdi", "Enhed", "Status"
+            "Adresse", "Navn", "Rå værdi", "HEX", "Skaleret værdi", "Enhed", "Status"
         ])
         self.setAlternatingRowColors(True)
         self.setEditTriggers(QTableWidget.EditTrigger.DoubleClicked)
@@ -27,8 +27,9 @@ class DataTable(QTableWidget):
         self.setColumnWidth(0, 80)   # Adresse
         self.setColumnWidth(1, 150)  # Navn
         self.setColumnWidth(2, 100)  # Rå værdi
-        self.setColumnWidth(3, 120)  # Skaleret værdi
-        self.setColumnWidth(4, 80)   # Enhed
+        self.setColumnWidth(3, 100)  # HEX
+        self.setColumnWidth(4, 120)  # Skaleret værdi
+        self.setColumnWidth(5, 80)   # Enhed
         # Status column stretches
     
     def update_data(self, result: PollResult):
@@ -48,20 +49,49 @@ class DataTable(QTableWidget):
                 self.setItem(row, 1, name_item)
                 
                 # Raw value
-                raw_item = QTableWidgetItem(str(value_data.get("raw", "")))
+                raw_value = value_data.get("raw", "")
+                raw_item = QTableWidgetItem(str(raw_value))
                 raw_item.setFlags(raw_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.setItem(row, 2, raw_item)
+                
+                # HEX value
+                hex_value = ""
+                try:
+                    if isinstance(raw_value, (int, float)):
+                        # Convert to integer and format as HEX
+                        int_val = int(raw_value)
+                        if int_val >= 0:
+                            hex_value = f"0x{int_val:X}"
+                        else:
+                            # For negative values, show as signed hex
+                            hex_value = f"-0x{abs(int_val):X}"
+                    elif isinstance(raw_value, bool):
+                        hex_value = "0x01" if raw_value else "0x00"
+                    else:
+                        # Try to convert string to int
+                        try:
+                            int_val = int(float(str(raw_value)))
+                            hex_value = f"0x{int_val:X}" if int_val >= 0 else f"-0x{abs(int_val):X}"
+                        except (ValueError, TypeError):
+                            hex_value = ""
+                except (ValueError, TypeError):
+                    hex_value = ""
+                
+                hex_item = QTableWidgetItem(hex_value)
+                hex_item.setFlags(hex_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                hex_item.setForeground(Qt.GlobalColor.darkBlue)
+                self.setItem(row, 3, hex_item)
                 
                 # Scaled value
                 scaled = value_data.get("scaled", "")
                 scaled_item = QTableWidgetItem(f"{scaled:.2f}" if isinstance(scaled, (int, float)) else str(scaled))
                 scaled_item.setFlags(scaled_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                self.setItem(row, 3, scaled_item)
+                self.setItem(row, 4, scaled_item)
                 
                 # Unit
                 unit_item = QTableWidgetItem(str(value_data.get("unit", "")))
                 unit_item.setFlags(unit_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                self.setItem(row, 4, unit_item)
+                self.setItem(row, 5, unit_item)
                 
                 # Status
                 status_item = QTableWidgetItem(result.status.value)
@@ -70,6 +100,6 @@ class DataTable(QTableWidget):
                     status_item.setForeground(Qt.GlobalColor.green)
                 else:
                     status_item.setForeground(Qt.GlobalColor.red)
-                self.setItem(row, 5, status_item)
+                self.setItem(row, 6, status_item)
         
         self.resizeColumnsToContents()

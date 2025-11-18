@@ -444,7 +444,7 @@ class MainWindow(QMainWindow):
     
     def _load_project_file(self, file_path: Path):
         """Load project from file"""
-        connections, sessions = self.project_manager.load_project(file_path)
+        connections, sessions, multi_view_groups, multi_view_active = self.project_manager.load_project(file_path)
         
         # Clear current
         self.connections.clear()
@@ -468,6 +468,15 @@ class MainWindow(QMainWindow):
             self.session_manager.add_session(session)
             self._create_session_tab(session)
         
+        # Load multi-view configuration
+        self.multi_view_groups = multi_view_groups
+        self.multi_view_active = multi_view_active
+        self.multi_view_action.setChecked(multi_view_active)
+        
+        # Apply multi-view if active
+        if self.multi_view_active and self.multi_view_groups:
+            self.session_container.set_multi_view(self.multi_view_groups)
+        
         self.connection_tree.update_connections(
             self.connections, 
             self.sessions,
@@ -486,7 +495,13 @@ class MainWindow(QMainWindow):
         )
         if file_path:
             sessions = list(self.sessions.values())
-            self.project_manager.save_project(Path(file_path), self.connections, sessions)
+            self.project_manager.save_project(
+                Path(file_path), 
+                self.connections, 
+                sessions,
+                self.multi_view_groups,
+                self.multi_view_active
+            )
             QMessageBox.information(self, "Projekt gemt", f"Projekt gemt til {file_path}")
     
     def _on_new_connection(self):
@@ -575,7 +590,7 @@ class MainWindow(QMainWindow):
     
     def _create_session_tab(self, session: SessionDefinition):
         """Create a session tab"""
-        tab = SessionTab(session, self.connections, self.session_manager, self.polling_engine)
+        tab = SessionTab(session, self.connections, self.session_manager, self.polling_engine, self.config_manager)
         # Connect signal to update tree when connection changes
         tab.connection_changed.connect(self._on_session_connection_changed)
         # Add to container
