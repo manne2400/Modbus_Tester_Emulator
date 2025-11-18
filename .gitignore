@@ -60,3 +60,10 @@ $RECYCLE.BIN/
 # Keep these files
 !src/storage/config_manager.py
 !src/storage/project_manager.py
+
+# Documentation files (not for GitHub)
+Todo.md
+STATUS.md
+RTU_SETUP_GUIDE.md
+GITHUB_SETUP.md
+GIT_USAGE.md
