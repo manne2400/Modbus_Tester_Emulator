@@ -22,8 +22,10 @@ from src.storage.config_manager import ConfigManager
 from src.storage.project_manager import ProjectManager
 from src.application.session_manager import SessionManager
 from src.application.polling_engine import PollingEngine
-from src.models.connection_profile import ConnectionProfile
+from src.models.connection_profile import ConnectionProfile, ConnectionType
 from src.models.session_definition import SessionDefinition
+from src.protocol.function_codes import FunctionCode
+from src.application.tcp_scanner import TcpDeviceInfo
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -1038,8 +1040,137 @@ class MainWindow(QMainWindow):
     
     def _show_device_scanner(self):
         """Show device scanner dialog (RTU and TCP)"""
-        dialog = DeviceScannerDialog(self)
+        dialog = DeviceScannerDialog(
+            self,
+            import_connection_callback=self._import_connection_from_scanner,
+            import_session_callback=self._import_session_from_scanner
+        )
         dialog.exec()
+    
+    def _import_connection_from_scanner(self, ip_address: str, port: int):
+        """Import connection from scanner"""
+        # Generate connection name
+        connection_name = f"TCP_{ip_address}_{port}"
+        counter = 1
+        while any(c.name == connection_name for c in self.connections):
+            connection_name = f"TCP_{ip_address}_{port}_{counter}"
+            counter += 1
+        
+        # Create connection profile
+        profile = ConnectionProfile(
+            name=connection_name,
+            connection_type=ConnectionType.TCP,
+            host=ip_address,
+            port=port,
+            timeout=3.0,
+            retries=3
+        )
+        
+        # Add connection
+        self.connections.append(profile)
+        self.session_manager.add_connection(profile)
+        self.config_manager.save_connections(self.connections)
+        self.connection_tree.update_connections(
+            self.connections, 
+            self.sessions,
+            self.multi_view_groups,
+            self.multi_view_active
+        )
+        
+        QMessageBox.information(
+            self, 
+            "Connection Imported", 
+            f"Connection '{connection_name}' has been imported successfully."
+        )
+    
+    def _import_session_from_scanner(self, device_info: TcpDeviceInfo):
+        """Import session from scanner device info"""
+        # Find or create connection
+        connection_name = f"TCP_{device_info.ip_address}_{device_info.port}"
+        connection = next((c for c in self.connections if c.name == connection_name), None)
+        
+        if not connection:
+            # Create connection first
+            counter = 1
+            while any(c.name == connection_name for c in self.connections):
+                connection_name = f"TCP_{device_info.ip_address}_{device_info.port}_{counter}"
+                counter += 1
+            
+            connection = ConnectionProfile(
+                name=connection_name,
+                connection_type=ConnectionType.TCP,
+                host=device_info.ip_address,
+                port=device_info.port,
+                timeout=3.0,
+                retries=3
+            )
+            
+            self.connections.append(connection)
+            self.session_manager.add_connection(connection)
+            self.config_manager.save_connections(self.connections)
+        
+        # Determine which register type to use (prioritize holding registers)
+        if device_info.has_holding_registers and device_info.holding_register_addresses:
+            function_code = FunctionCode.READ_HOLDING_REGISTERS
+            addresses = device_info.holding_register_addresses
+            register_type = "Holding Registers"
+        elif device_info.has_input_registers and device_info.input_register_addresses:
+            function_code = FunctionCode.READ_INPUT_REGISTERS
+            addresses = device_info.input_register_addresses
+            register_type = "Input Registers"
+        elif device_info.has_coils and device_info.coil_addresses:
+            function_code = FunctionCode.READ_COILS
+            addresses = device_info.coil_addresses
+            register_type = "Coils"
+        elif device_info.has_discrete_inputs and device_info.discrete_input_addresses:
+            function_code = FunctionCode.READ_DISCRETE_INPUTS
+            addresses = device_info.discrete_input_addresses
+            register_type = "Discrete Inputs"
+        else:
+            QMessageBox.warning(self, "Import Error", "No active registers found to import.")
+            return
+        
+        # Calculate start address and quantity
+        start_address = min(addresses)
+        max_address = max(addresses)
+        quantity = max_address - start_address + 1
+        
+        # Generate session name
+        session_name = f"{connection_name}_Device{device_info.device_id}_{register_type}"
+        counter = 1
+        while session_name in self.sessions:
+            session_name = f"{connection_name}_Device{device_info.device_id}_{register_type}_{counter}"
+            counter += 1
+        
+        # Create session
+        session = SessionDefinition(
+            name=session_name,
+            connection_profile_name=connection.name,
+            slave_id=device_info.device_id,
+            function_code=function_code,
+            start_address=start_address,
+            quantity=quantity,
+            poll_interval_ms=1000
+        )
+        
+        # Add session
+        self.sessions[session.name] = session
+        self.session_manager.add_session(session)
+        self.config_manager.save_sessions(list(self.sessions.values()))
+        self._create_session_tab(session)
+        self.connection_tree.update_connections(
+            self.connections, 
+            self.sessions,
+            self.multi_view_groups,
+            self.multi_view_active
+        )
+        
+        QMessageBox.information(
+            self, 
+            "Session Imported", 
+            f"Session '{session_name}' has been imported successfully.\n"
+            f"Reading {register_type} from address {start_address} to {max_address}."
+        )
     
     def closeEvent(self, event):
         """Handle window close"""

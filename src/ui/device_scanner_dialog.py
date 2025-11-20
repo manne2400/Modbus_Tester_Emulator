@@ -3,10 +3,11 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QSpinBox, QGroupBox, QFormLayout, QProgressBar,
     QTextEdit, QTableWidget, QTableWidgetItem, QHeaderView,
-    QMessageBox, QSplitter, QTabWidget, QWidget, QLineEdit
+    QMessageBox, QSplitter, QTabWidget, QWidget, QLineEdit, QMenu
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from typing import Optional
+from PyQt6.QtGui import QAction
+from typing import Optional, Callable
 import serial.tools.list_ports
 from src.application.rtu_scanner import RtuScanner, DeviceInfo
 from src.application.tcp_scanner import TcpScanner, TcpDeviceInfo
@@ -393,11 +394,13 @@ class RtuScannerTab(QWidget):
 class TcpScannerTab(QWidget):
     """TCP Scanner tab"""
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, import_connection_callback: Optional[Callable] = None, import_session_callback: Optional[Callable] = None):
         super().__init__(parent)
         self.scanner: Optional[TcpScanner] = None
         self.scanner_thread: Optional[TcpScannerThread] = None
         self.found_devices: list[TcpDeviceInfo] = []
+        self.import_connection_callback = import_connection_callback
+        self.import_session_callback = import_session_callback
         self._setup_ui()
     
     def _setup_ui(self):
@@ -465,6 +468,8 @@ class TcpScannerTab(QWidget):
         ])
         self.results_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.results_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.results_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.results_table.customContextMenuRequested.connect(self._show_context_menu)
         results_layout.addWidget(self.results_table)
         results_group.setLayout(results_layout)
         splitter.addWidget(results_group)
@@ -474,7 +479,12 @@ class TcpScannerTab(QWidget):
         details_layout = QVBoxLayout()
         self.details_text = QTextEdit()
         self.details_text.setReadOnly(True)
+        
+        # Print button
+        print_btn = QPushButton("Print Device Info")
+        print_btn.clicked.connect(self._print_device_info)
         details_layout.addWidget(self.details_text)
+        details_layout.addWidget(print_btn)
         details_group.setLayout(details_layout)
         splitter.addWidget(details_group)
         
@@ -664,6 +674,90 @@ class TcpScannerTab(QWidget):
             
             self.details_text.setText(details)
     
+    def _print_device_info(self):
+        """Print device info to console"""
+        text = self.details_text.toPlainText()
+        if text:
+            print("\n" + "="*60)
+            print("Device Information")
+            print("="*60)
+            print(text)
+            print("="*60 + "\n")
+            QMessageBox.information(self, "Printed", "Device information has been printed to the console.")
+        else:
+            QMessageBox.warning(self, "No Selection", "Please select a device from the table.")
+    
+    def _show_context_menu(self, position):
+        """Show context menu for table items"""
+        item = self.results_table.itemAt(position)
+        if not item:
+            return
+        
+        row = item.row()
+        ip_item = self.results_table.item(row, 0)
+        port_item = self.results_table.item(row, 1)
+        device_id_item = self.results_table.item(row, 2)
+        
+        if not ip_item or not port_item or not device_id_item:
+            return
+        
+        menu = QMenu(self)
+        
+        import_connection_action = QAction("Import Connection", self)
+        import_connection_action.triggered.connect(lambda: self._import_connection(row))
+        menu.addAction(import_connection_action)
+        
+        import_session_action = QAction("Import Session", self)
+        import_session_action.triggered.connect(lambda: self._import_session(row))
+        menu.addAction(import_session_action)
+        
+        menu.exec(self.results_table.viewport().mapToGlobal(position))
+    
+    def _import_connection(self, row: int):
+        """Import connection from selected device"""
+        ip_item = self.results_table.item(row, 0)
+        port_item = self.results_table.item(row, 1)
+        
+        if not ip_item or not port_item:
+            return
+        
+        ip_address = ip_item.text()
+        port = int(port_item.text())
+        
+        if self.import_connection_callback:
+            self.import_connection_callback(ip_address, port)
+        else:
+            QMessageBox.warning(self, "Import Error", "Import callback not available. Please use the import function from the main window.")
+    
+    def _import_session(self, row: int):
+        """Import session from selected device"""
+        ip_item = self.results_table.item(row, 0)
+        port_item = self.results_table.item(row, 1)
+        device_id_item = self.results_table.item(row, 2)
+        
+        if not ip_item or not port_item or not device_id_item:
+            return
+        
+        ip_address = ip_item.text()
+        port = int(port_item.text())
+        device_id = int(device_id_item.text())
+        
+        # Find device info
+        device_info = next(
+            (d for d in self.found_devices 
+             if d.ip_address == ip_address and d.port == port and d.device_id == device_id),
+            None
+        )
+        
+        if not device_info:
+            QMessageBox.warning(self, "Import Error", "Device information not found.")
+            return
+        
+        if self.import_session_callback:
+            self.import_session_callback(device_info)
+        else:
+            QMessageBox.warning(self, "Import Error", "Import callback not available. Please use the import function from the main window.")
+    
     def stop_scanning(self):
         """Stop scanning if active"""
         if self.scanner_thread and self.scanner_thread.isRunning():
@@ -673,10 +767,12 @@ class TcpScannerTab(QWidget):
 class DeviceScannerDialog(QDialog):
     """Dialog for device scanning with RTU and TCP tabs"""
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, import_connection_callback: Optional[Callable] = None, import_session_callback: Optional[Callable] = None):
         super().__init__(parent)
         self.setWindowTitle("Device Scanner")
         self.setMinimumSize(900, 700)
+        self.import_connection_callback = import_connection_callback
+        self.import_session_callback = import_session_callback
         
         self._setup_ui()
         self._apply_dark_theme()
@@ -693,7 +789,7 @@ class DeviceScannerDialog(QDialog):
         self.tab_widget.addTab(self.rtu_tab, "RTU Scanner")
         
         # TCP Scanner tab
-        self.tcp_tab = TcpScannerTab(self)
+        self.tcp_tab = TcpScannerTab(self, self.import_connection_callback, self.import_session_callback)
         self.tab_widget.addTab(self.tcp_tab, "TCP Scanner")
         
         layout.addWidget(self.tab_widget)
