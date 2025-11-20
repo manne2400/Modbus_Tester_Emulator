@@ -3,10 +3,12 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QSpinBox, QGroupBox, QFormLayout, QProgressBar,
     QTextEdit, QTableWidget, QTableWidgetItem, QHeaderView,
-    QMessageBox, QSplitter, QTabWidget, QWidget, QLineEdit, QMenu
+    QMessageBox, QSplitter, QTabWidget, QWidget, QLineEdit, QMenu,
+    QFileDialog
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QAction
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QMarginsF
+from PyQt6.QtGui import QAction, QTextDocument, QPageSize, QPageLayout
+from PyQt6.QtPrintSupport import QPrinter
 from typing import Optional, Callable
 import serial.tools.list_ports
 from src.application.rtu_scanner import RtuScanner, DeviceInfo
@@ -93,11 +95,13 @@ class TcpScannerThread(QThread):
 class RtuScannerTab(QWidget):
     """RTU Scanner tab"""
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, import_connection_callback: Optional[Callable] = None, import_session_callback: Optional[Callable] = None):
         super().__init__(parent)
         self.scanner: Optional[RtuScanner] = None
         self.scanner_thread: Optional[RtuScannerThread] = None
         self.found_devices: list[DeviceInfo] = []
+        self.import_connection_callback = import_connection_callback
+        self.import_session_callback = import_session_callback
         self._setup_ui()
     
     def _setup_ui(self):
@@ -188,6 +192,8 @@ class RtuScannerTab(QWidget):
         ])
         self.results_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.results_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.results_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.results_table.customContextMenuRequested.connect(self._show_context_menu)
         results_layout.addWidget(self.results_table)
         results_group.setLayout(results_layout)
         splitter.addWidget(results_group)
@@ -197,7 +203,12 @@ class RtuScannerTab(QWidget):
         details_layout = QVBoxLayout()
         self.details_text = QTextEdit()
         self.details_text.setReadOnly(True)
+        
+        # Save as PDF button
+        print_btn = QPushButton("Save as PDF")
+        print_btn.clicked.connect(self._print_device_info)
         details_layout.addWidget(self.details_text)
+        details_layout.addWidget(print_btn)
         details_group.setLayout(details_layout)
         splitter.addWidget(details_group)
         
@@ -385,6 +396,160 @@ class RtuScannerTab(QWidget):
             
             self.details_text.setText(details)
     
+    def _print_device_info(self):
+        """Save device info as PDF"""
+        text = self.details_text.toPlainText()
+        if not text:
+            QMessageBox.warning(self, "No Selection", "Please select a device from the table.")
+            return
+        
+        # Get file path from user
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Device Info as PDF",
+            "device_info.pdf",
+            "PDF Files (*.pdf)"
+        )
+        
+        if not file_path:
+            return  # User cancelled
+        
+        try:
+            # Create printer for PDF
+            printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+            printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
+            printer.setOutputFileName(file_path)
+            printer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+            margins = QMarginsF(15, 15, 15, 15)  # left, top, right, bottom in millimeters
+            printer.setPageMargins(margins, QPageLayout.Unit.Millimeter)
+            
+            # Create document
+            document = QTextDocument()
+            
+            # Format text with HTML for better appearance
+            html_content = f"""
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; font-size: 10pt; }}
+                    h1 {{ color: #333; border-bottom: 2px solid #333; padding-bottom: 5px; }}
+                    pre {{ background-color: #f5f5f5; padding: 10px; border-left: 3px solid #007acc; 
+                          white-space: pre-wrap; font-family: 'Courier New', monospace; }}
+                </style>
+            </head>
+            <body>
+                <h1>Device Information</h1>
+                <pre>{text}</pre>
+            </body>
+            </html>
+            """
+            
+            document.setHtml(html_content)
+            document.print(printer)
+            
+            QMessageBox.information(
+                self, 
+                "PDF Saved", 
+                f"Device information has been saved as PDF:\n{file_path}"
+            )
+        except Exception as e:
+            logger.error(f"Error saving PDF: {e}")
+            QMessageBox.critical(
+                self, 
+                "Error", 
+                f"Failed to save PDF:\n{str(e)}"
+            )
+    
+    def _show_context_menu(self, position):
+        """Show context menu for table items"""
+        item = self.results_table.itemAt(position)
+        if not item:
+            return
+        
+        row = item.row()
+        device_id_item = self.results_table.item(row, 0)
+        
+        if not device_id_item:
+            return
+        
+        menu = QMenu(self)
+        
+        import_connection_action = QAction("Import Connection", self)
+        import_connection_action.triggered.connect(lambda: self._import_connection(row))
+        menu.addAction(import_connection_action)
+        
+        import_session_action = QAction("Import Session", self)
+        import_session_action.triggered.connect(lambda: self._import_session(row))
+        menu.addAction(import_session_action)
+        
+        menu.exec(self.results_table.viewport().mapToGlobal(position))
+    
+    def _import_connection(self, row: int):
+        """Import connection from selected device"""
+        device_id_item = self.results_table.item(row, 0)
+        
+        if not device_id_item:
+            return
+        
+        device_id = int(device_id_item.text())
+        
+        # Get port settings from UI
+        port = self.port_combo.currentData()
+        if not port:
+            port = self.port_combo.currentText().strip()
+        
+        if not port:
+            QMessageBox.warning(self, "Import Error", "COM port information not available.")
+            return
+        
+        baudrate = int(self.baudrate_combo.currentText())
+        parity = self.parity_combo.currentText()
+        stopbits = self.stopbits_spin.value()
+        bytesize = self.bytesize_spin.value()
+        
+        if self.import_connection_callback:
+            self.import_connection_callback(port, baudrate, parity, stopbits, bytesize)
+        else:
+            QMessageBox.warning(self, "Import Error", "Import callback not available. Please use the import function from the main window.")
+    
+    def _import_session(self, row: int):
+        """Import session from selected device"""
+        device_id_item = self.results_table.item(row, 0)
+        
+        if not device_id_item:
+            return
+        
+        device_id = int(device_id_item.text())
+        
+        # Find device info
+        device_info = next(
+            (d for d in self.found_devices if d.device_id == device_id),
+            None
+        )
+        
+        if not device_info:
+            QMessageBox.warning(self, "Import Error", "Device information not found.")
+            return
+        
+        # Get port settings from UI
+        port = self.port_combo.currentData()
+        if not port:
+            port = self.port_combo.currentText().strip()
+        
+        if not port:
+            QMessageBox.warning(self, "Import Error", "COM port information not available.")
+            return
+        
+        baudrate = int(self.baudrate_combo.currentText())
+        parity = self.parity_combo.currentText()
+        stopbits = self.stopbits_spin.value()
+        bytesize = self.bytesize_spin.value()
+        
+        if self.import_session_callback:
+            self.import_session_callback(device_info, port, baudrate, parity, stopbits, bytesize)
+        else:
+            QMessageBox.warning(self, "Import Error", "Import callback not available. Please use the import function from the main window.")
+    
     def stop_scanning(self):
         """Stop scanning if active"""
         if self.scanner_thread and self.scanner_thread.isRunning():
@@ -480,8 +645,8 @@ class TcpScannerTab(QWidget):
         self.details_text = QTextEdit()
         self.details_text.setReadOnly(True)
         
-        # Print button
-        print_btn = QPushButton("Print Device Info")
+        # Save as PDF button
+        print_btn = QPushButton("Save as PDF")
         print_btn.clicked.connect(self._print_device_info)
         details_layout.addWidget(self.details_text)
         details_layout.addWidget(print_btn)
@@ -675,17 +840,68 @@ class TcpScannerTab(QWidget):
             self.details_text.setText(details)
     
     def _print_device_info(self):
-        """Print device info to console"""
+        """Save device info as PDF"""
         text = self.details_text.toPlainText()
-        if text:
-            print("\n" + "="*60)
-            print("Device Information")
-            print("="*60)
-            print(text)
-            print("="*60 + "\n")
-            QMessageBox.information(self, "Printed", "Device information has been printed to the console.")
-        else:
+        if not text:
             QMessageBox.warning(self, "No Selection", "Please select a device from the table.")
+            return
+        
+        # Get file path from user
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Device Info as PDF",
+            "device_info.pdf",
+            "PDF Files (*.pdf)"
+        )
+        
+        if not file_path:
+            return  # User cancelled
+        
+        try:
+            # Create printer for PDF
+            printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+            printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
+            printer.setOutputFileName(file_path)
+            printer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+            margins = QMarginsF(15, 15, 15, 15)  # left, top, right, bottom in millimeters
+            printer.setPageMargins(margins, QPageLayout.Unit.Millimeter)
+            
+            # Create document
+            document = QTextDocument()
+            
+            # Format text with HTML for better appearance
+            html_content = f"""
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; font-size: 10pt; }}
+                    h1 {{ color: #333; border-bottom: 2px solid #333; padding-bottom: 5px; }}
+                    pre {{ background-color: #f5f5f5; padding: 10px; border-left: 3px solid #007acc; 
+                          white-space: pre-wrap; font-family: 'Courier New', monospace; }}
+                </style>
+            </head>
+            <body>
+                <h1>Device Information</h1>
+                <pre>{text}</pre>
+            </body>
+            </html>
+            """
+            
+            document.setHtml(html_content)
+            document.print(printer)
+            
+            QMessageBox.information(
+                self, 
+                "PDF Saved", 
+                f"Device information has been saved as PDF:\n{file_path}"
+            )
+        except Exception as e:
+            logger.error(f"Error saving PDF: {e}")
+            QMessageBox.critical(
+                self, 
+                "Error", 
+                f"Failed to save PDF:\n{str(e)}"
+            )
     
     def _show_context_menu(self, position):
         """Show context menu for table items"""
@@ -785,7 +1001,7 @@ class DeviceScannerDialog(QDialog):
         self.tab_widget = QTabWidget()
         
         # RTU Scanner tab
-        self.rtu_tab = RtuScannerTab(self)
+        self.rtu_tab = RtuScannerTab(self, self.import_connection_callback, self.import_session_callback)
         self.tab_widget.addTab(self.rtu_tab, "RTU Scanner")
         
         # TCP Scanner tab

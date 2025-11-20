@@ -26,6 +26,7 @@ from src.models.connection_profile import ConnectionProfile, ConnectionType
 from src.models.session_definition import SessionDefinition
 from src.protocol.function_codes import FunctionCode
 from src.application.tcp_scanner import TcpDeviceInfo
+from src.application.rtu_scanner import DeviceInfo
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -1047,24 +1048,49 @@ class MainWindow(QMainWindow):
         )
         dialog.exec()
     
-    def _import_connection_from_scanner(self, ip_address: str, port: int):
-        """Import connection from scanner"""
-        # Generate connection name
-        connection_name = f"TCP_{ip_address}_{port}"
-        counter = 1
-        while any(c.name == connection_name for c in self.connections):
-            connection_name = f"TCP_{ip_address}_{port}_{counter}"
-            counter += 1
-        
-        # Create connection profile
-        profile = ConnectionProfile(
-            name=connection_name,
-            connection_type=ConnectionType.TCP,
-            host=ip_address,
-            port=port,
-            timeout=3.0,
-            retries=3
-        )
+    def _import_connection_from_scanner(self, *args, **kwargs):
+        """Import connection from scanner - handles both TCP and RTU"""
+        # Check if it's TCP (2 args: ip_address, port) or RTU (5 args: port, baudrate, parity, stopbits, bytesize)
+        if len(args) == 2:
+            # TCP connection
+            ip_address, port = args
+            connection_name = f"TCP_{ip_address}_{port}"
+            counter = 1
+            while any(c.name == connection_name for c in self.connections):
+                connection_name = f"TCP_{ip_address}_{port}_{counter}"
+                counter += 1
+            
+            profile = ConnectionProfile(
+                name=connection_name,
+                connection_type=ConnectionType.TCP,
+                host=ip_address,
+                port=port,
+                timeout=3.0,
+                retries=3
+            )
+        elif len(args) == 5:
+            # RTU connection
+            port, baudrate, parity, stopbits, bytesize = args
+            connection_name = f"RTU_{port}"
+            counter = 1
+            while any(c.name == connection_name for c in self.connections):
+                connection_name = f"RTU_{port}_{counter}"
+                counter += 1
+            
+            profile = ConnectionProfile(
+                name=connection_name,
+                connection_type=ConnectionType.RTU,
+                port_name=port,
+                baudrate=baudrate,
+                parity=parity,
+                stopbits=stopbits,
+                bytesize=bytesize,
+                timeout=3.0,
+                retries=3
+            )
+        else:
+            QMessageBox.warning(self, "Import Error", "Invalid parameters for connection import.")
+            return
         
         # Add connection
         self.connections.append(profile)
@@ -1080,54 +1106,111 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self, 
             "Connection Imported", 
-            f"Connection '{connection_name}' has been imported successfully."
+            f"Connection '{profile.name}' has been imported successfully."
         )
     
-    def _import_session_from_scanner(self, device_info: TcpDeviceInfo):
-        """Import session from scanner device info"""
-        # Find or create connection
-        connection_name = f"TCP_{device_info.ip_address}_{device_info.port}"
-        connection = next((c for c in self.connections if c.name == connection_name), None)
-        
-        if not connection:
-            # Create connection first
-            counter = 1
-            while any(c.name == connection_name for c in self.connections):
-                connection_name = f"TCP_{device_info.ip_address}_{device_info.port}_{counter}"
-                counter += 1
+    def _import_session_from_scanner(self, device_info, *args):
+        """Import session from scanner device info - handles both TCP and RTU"""
+        # Check if it's TCP or RTU device info
+        if isinstance(device_info, TcpDeviceInfo):
+            # TCP device
+            connection_name = f"TCP_{device_info.ip_address}_{device_info.port}"
+            connection = next((c for c in self.connections if c.name == connection_name), None)
             
-            connection = ConnectionProfile(
-                name=connection_name,
-                connection_type=ConnectionType.TCP,
-                host=device_info.ip_address,
-                port=device_info.port,
-                timeout=3.0,
-                retries=3
-            )
+            if not connection:
+                counter = 1
+                while any(c.name == connection_name for c in self.connections):
+                    connection_name = f"TCP_{device_info.ip_address}_{device_info.port}_{counter}"
+                    counter += 1
+                
+                connection = ConnectionProfile(
+                    name=connection_name,
+                    connection_type=ConnectionType.TCP,
+                    host=device_info.ip_address,
+                    port=device_info.port,
+                    timeout=3.0,
+                    retries=3
+                )
+                
+                self.connections.append(connection)
+                self.session_manager.add_connection(connection)
+                self.config_manager.save_connections(self.connections)
             
-            self.connections.append(connection)
-            self.session_manager.add_connection(connection)
-            self.config_manager.save_connections(self.connections)
-        
-        # Determine which register type to use (prioritize holding registers)
-        if device_info.has_holding_registers and device_info.holding_register_addresses:
-            function_code = FunctionCode.READ_HOLDING_REGISTERS
-            addresses = device_info.holding_register_addresses
-            register_type = "Holding Registers"
-        elif device_info.has_input_registers and device_info.input_register_addresses:
-            function_code = FunctionCode.READ_INPUT_REGISTERS
-            addresses = device_info.input_register_addresses
-            register_type = "Input Registers"
-        elif device_info.has_coils and device_info.coil_addresses:
-            function_code = FunctionCode.READ_COILS
-            addresses = device_info.coil_addresses
-            register_type = "Coils"
-        elif device_info.has_discrete_inputs and device_info.discrete_input_addresses:
-            function_code = FunctionCode.READ_DISCRETE_INPUTS
-            addresses = device_info.discrete_input_addresses
-            register_type = "Discrete Inputs"
+            device_id = device_info.device_id
+            
+            # Determine which register type to use
+            if device_info.has_holding_registers and device_info.holding_register_addresses:
+                function_code = FunctionCode.READ_HOLDING_REGISTERS
+                addresses = device_info.holding_register_addresses
+                register_type = "Holding Registers"
+            elif device_info.has_input_registers and device_info.input_register_addresses:
+                function_code = FunctionCode.READ_INPUT_REGISTERS
+                addresses = device_info.input_register_addresses
+                register_type = "Input Registers"
+            elif device_info.has_coils and device_info.coil_addresses:
+                function_code = FunctionCode.READ_COILS
+                addresses = device_info.coil_addresses
+                register_type = "Coils"
+            elif device_info.has_discrete_inputs and device_info.discrete_input_addresses:
+                function_code = FunctionCode.READ_DISCRETE_INPUTS
+                addresses = device_info.discrete_input_addresses
+                register_type = "Discrete Inputs"
+            else:
+                QMessageBox.warning(self, "Import Error", "No active registers found to import.")
+                return
+                
+        elif isinstance(device_info, DeviceInfo) and len(args) == 5:
+            # RTU device
+            port, baudrate, parity, stopbits, bytesize = args
+            connection_name = f"RTU_{port}"
+            connection = next((c for c in self.connections if c.name == connection_name), None)
+            
+            if not connection:
+                counter = 1
+                while any(c.name == connection_name for c in self.connections):
+                    connection_name = f"RTU_{port}_{counter}"
+                    counter += 1
+                
+                connection = ConnectionProfile(
+                    name=connection_name,
+                    connection_type=ConnectionType.RTU,
+                    port_name=port,
+                    baudrate=baudrate,
+                    parity=parity,
+                    stopbits=stopbits,
+                    bytesize=bytesize,
+                    timeout=3.0,
+                    retries=3
+                )
+                
+                self.connections.append(connection)
+                self.session_manager.add_connection(connection)
+                self.config_manager.save_connections(self.connections)
+            
+            device_id = device_info.device_id
+            
+            # Determine which register type to use
+            if device_info.has_holding_registers and device_info.holding_register_addresses:
+                function_code = FunctionCode.READ_HOLDING_REGISTERS
+                addresses = device_info.holding_register_addresses
+                register_type = "Holding Registers"
+            elif device_info.has_input_registers and device_info.input_register_addresses:
+                function_code = FunctionCode.READ_INPUT_REGISTERS
+                addresses = device_info.input_register_addresses
+                register_type = "Input Registers"
+            elif device_info.has_coils and device_info.coil_addresses:
+                function_code = FunctionCode.READ_COILS
+                addresses = device_info.coil_addresses
+                register_type = "Coils"
+            elif device_info.has_discrete_inputs and device_info.discrete_input_addresses:
+                function_code = FunctionCode.READ_DISCRETE_INPUTS
+                addresses = device_info.discrete_input_addresses
+                register_type = "Discrete Inputs"
+            else:
+                QMessageBox.warning(self, "Import Error", "No active registers found to import.")
+                return
         else:
-            QMessageBox.warning(self, "Import Error", "No active registers found to import.")
+            QMessageBox.warning(self, "Import Error", "Invalid parameters for session import.")
             return
         
         # Calculate start address and quantity
@@ -1136,17 +1219,17 @@ class MainWindow(QMainWindow):
         quantity = max_address - start_address + 1
         
         # Generate session name
-        session_name = f"{connection_name}_Device{device_info.device_id}_{register_type}"
+        session_name = f"{connection.name}_Device{device_id}_{register_type}"
         counter = 1
         while session_name in self.sessions:
-            session_name = f"{connection_name}_Device{device_info.device_id}_{register_type}_{counter}"
+            session_name = f"{connection.name}_Device{device_id}_{register_type}_{counter}"
             counter += 1
         
         # Create session
         session = SessionDefinition(
             name=session_name,
             connection_profile_name=connection.name,
-            slave_id=device_info.device_id,
+            slave_id=device_id,
             function_code=function_code,
             start_address=start_address,
             quantity=quantity,

@@ -94,15 +94,32 @@ class HelpDialog(QDialog):
             <li>Slave ID: 1</li>
         </ul>
         
-        <h3>2. Scan for RTU devices (optional)</h3>
-        <p>If you're working with RTU devices and don't know the device IDs, you can use the RTU Device Scanner:</p>
+        <h3>2. Scan for devices (optional)</h3>
+        <p>If you're working with Modbus devices and don't know the device IDs or IP addresses, you can use the Device Scanner:</p>
+        <p><b>For RTU devices:</b></p>
         <ul>
-            <li>Go to <b>Connection → RTU Device Scanner...</b></li>
+            <li>Go to <b>Connection → Device Scanner...</b> and select the <b>RTU Scanner</b> tab</li>
             <li>Select the COM port and configure serial settings (baudrate, parity, etc.)</li>
             <li>Set the device ID range to scan (default: 1-247)</li>
             <li>Click <b>"Start Scan"</b> to automatically discover Modbus devices</li>
             <li>The scanner will find devices and show which register types are available</li>
             <li><b>Note:</b> Only addresses with active values are shown (coils/discrete inputs with value=1, registers with value≠0)</li>
+        </ul>
+        <p><b>For TCP/IP devices:</b></p>
+        <ul>
+            <li>Go to <b>Connection → Device Scanner...</b> and select the <b>TCP Scanner</b> tab</li>
+            <li>Enter IP range (e.g., "192.168.1.1-254" or "192.168.1.0/24" for CIDR notation)</li>
+            <li>Enter ports to scan (e.g., "502" or "502,5020" for multiple ports)</li>
+            <li>Set the device ID range to scan (default: 1-247)</li>
+            <li>Click <b>"Start Scan"</b> to automatically discover Modbus TCP devices on the network</li>
+            <li>The scanner will test each IP:port combination and scan device IDs</li>
+            <li><b>Note:</b> Only addresses with active values are shown (coils/discrete inputs with value=1, registers with value≠0)</li>
+        </ul>
+        <p><b>Device Scanner Features:</b></p>
+        <ul>
+            <li><b>Save as PDF:</b> Click "Save as PDF" button to export device information to a PDF file</li>
+            <li><b>Import Connection:</b> Right-click on a found device and select "Import Connection" to automatically create a connection profile</li>
+            <li><b>Import Session:</b> Right-click on a found device and select "Import Session" to automatically create a connection and session with the discovered register addresses</li>
         </ul>
         
         <h3>3. Create a connection</h3>
@@ -339,12 +356,21 @@ class HelpDialog(QDialog):
             <li>Try clicking on the group in the connection tree</li>
         </ul>
         
-        <h3>RTU Device Scanner</h3>
-        <p><b>Scanner does not find devices:</b></p>
+        <h3>Device Scanner</h3>
+        <p><b>RTU Scanner does not find devices:</b></p>
         <ul>
             <li>Check that the COM port is correct and available</li>
             <li>Check that baudrate, parity, stop bits match the device</li>
             <li>Try a smaller device ID range (e.g. 1-10) to speed up scanning</li>
+            <li>Some devices may not respond to all function codes - this is normal</li>
+            <li>Note: Scanner only shows addresses with active values (non-zero for registers, True for coils)</li>
+        </ul>
+        <p><b>TCP Scanner does not find devices:</b></p>
+        <ul>
+            <li>Check that the IP range is correct and devices are on the network</li>
+            <li>Verify that the ports are correct (typically 502 for Modbus TCP)</li>
+            <li>Check firewall settings - Modbus TCP uses port 502 by default</li>
+            <li>Try a smaller IP range first (e.g., "192.168.1.1-10") to speed up scanning</li>
             <li>Some devices may not respond to all function codes - this is normal</li>
             <li>Note: Scanner only shows addresses with active values (non-zero for registers, True for coils)</li>
         </ul>
@@ -421,14 +447,17 @@ class HelpDialog(QDialog):
             <li>You can have both TCP and RTU simulator running simultaneously</li>
         </ul>
         
-        <h3>RTU Device Scanner</h3>
+        <h3>Device Scanner</h3>
         <ul>
-            <li>Use <b>Connection → RTU Device Scanner...</b> to automatically discover Modbus devices on a serial bus</li>
-            <li>Configure COM port and serial settings to match your bus</li>
-            <li>Set device ID range (default 1-247, but you can limit it for faster scanning)</li>
-            <li>The scanner tests each device ID and identifies available register types</li>
+            <li>Use <b>Connection → Device Scanner...</b> to automatically discover Modbus devices</li>
+            <li><b>RTU Scanner:</b> Discover devices on a serial bus by scanning device IDs</li>
+            <li><b>TCP Scanner:</b> Discover devices on a network by scanning IP addresses, ports, and device IDs</li>
+            <li>Configure settings (COM port for RTU, IP range and ports for TCP) and set device ID range</li>
+            <li>The scanner tests each device and identifies available register types</li>
             <li>Results show which addresses have active values (non-zero for registers, True for coils)</li>
-            <li>Use the scanner to quickly identify device IDs and available data on an unknown RTU network</li>
+            <li><b>Save as PDF:</b> Export device information to a PDF file for documentation</li>
+            <li><b>Import Connection/Session:</b> Right-click on found devices to automatically import them into the application</li>
+            <li>Use the scanner to quickly identify devices and available data on unknown networks</li>
         </ul>
         
         <h3>User Interface</h3>

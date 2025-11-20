@@ -9,7 +9,11 @@ A Modbus master/simulator desktop application for testing Modbus RTU (RS-485/RS-
 - **Multiple parallel sessions** with multi-view support
 - **Read/write coils, discrete inputs, input registers and holding registers**
 - **Integrated Modbus Simulator** - Start TCP/RTU simulators directly from the app
-- **RTU Device Scanner** - Automatically discover Modbus devices on RTU bus
+- **Device Scanner** - Automatically discover Modbus devices on RTU bus or TCP/IP network
+  - **RTU Scanner** - Scan serial bus for device IDs and active registers
+  - **TCP Scanner** - Scan network IP ranges and ports for Modbus TCP devices
+  - **Export to PDF** - Save device information as PDF for documentation
+  - **Import Connection/Session** - Right-click on found devices to automatically import them
 - **Multi-view** - View multiple sessions side-by-side in groups
 - **Tag Management** - Define custom tags with data types, scaling, and units
 - **Data Types Support** - UINT16, INT16, UINT32, INT32 (DINT), FLOAT32, BOOL
@@ -84,13 +88,23 @@ The simulator has the following test data:
 - View multiple sessions side-by-side
 - Multi-view configuration is saved with projects
 
-**RTU Device Scanner:**
-- Go to **Connection → RTU Device Scanner...**
-- Select COM port and configure serial settings
-- Set device ID range to scan (default: 1-247)
-- Click "Start Scan" to automatically discover Modbus devices
-- Results show available register types and active addresses
-- Note: Only addresses with active values are shown (non-zero for registers, True for coils)
+**Device Scanner:**
+- Go to **Connection → Device Scanner...**
+- **RTU Scanner Tab:**
+  - Select COM port and configure serial settings (baudrate, parity, etc.)
+  - Set device ID range to scan (default: 1-247)
+  - Click "Start Scan" to automatically discover Modbus devices on serial bus
+- **TCP Scanner Tab:**
+  - Enter IP range (e.g., "192.168.1.1-254" or "192.168.1.0/24" for CIDR notation)
+  - Enter ports to scan (e.g., "502" or "502,5020" for multiple ports)
+  - Set device ID range to scan (default: 1-247)
+  - Click "Start Scan" to automatically discover Modbus TCP devices on network
+- **Features:**
+  - Results show available register types and active addresses
+  - **Save as PDF:** Click "Save as PDF" button to export device information
+  - **Import Connection:** Right-click on found device → "Import Connection" to create connection profile
+  - **Import Session:** Right-click on found device → "Import Session" to create connection and session automatically
+  - Note: Only addresses with active values are shown (non-zero for registers, True for coils)
 
 **Tag Management:**
 - Click "Manage Tags..." in a session tab
@@ -149,7 +163,11 @@ En Modbus master/simulator desktop-applikation til test af Modbus RTU (RS-485/RS
 - **Flere parallelle sessions** med multi-view support
 - **Læs/skriv coils, discrete inputs, input registers og holding registers**
 - **Integreret Modbus Simulator** - Start TCP/RTU simulatoren direkte fra appen
-- **RTU Device Scanner** - Find automatisk Modbus enheder på RTU bus
+- **Device Scanner** - Find automatisk Modbus enheder på RTU bus eller TCP/IP netværk
+  - **RTU Scanner** - Scan seriel bus for device IDs og aktive registre
+  - **TCP Scanner** - Scan netværk IP ranges og porte for Modbus TCP enheder
+  - **Eksporter til PDF** - Gem device information som PDF til dokumentation
+  - **Importer Connection/Session** - Højreklik på fundne enheder for automatisk at importere dem
 - **Multi-view** - Se flere sessions side om side i grupper
 - **Tag Management** - Definer brugerdefinerede tags med datatyper, skalering og enheder
 - **Datatyper Support** - UINT16, INT16, UINT32, INT32 (DINT), FLOAT32, BOOL
@@ -224,13 +242,23 @@ Simulatoren har følgende testdata:
 - Se flere sessions side om side
 - Multi-view konfiguration gemmes med projekter
 
-**RTU Device Scanner:**
-- Gå til **Connection → RTU Device Scanner...**
-- Vælg COM port og konfigurer serielle indstillinger
-- Sæt device ID range til at scanne (standard: 1-247)
-- Klik "Start Scan" for automatisk at finde Modbus enheder
-- Resultater viser tilgængelige register typer og aktive adresser
-- Bemærk: Kun adresser med aktive værdier vises (non-zero for registre, True for coils)
+**Device Scanner:**
+- Gå til **Connection → Device Scanner...**
+- **RTU Scanner Tab:**
+  - Vælg COM port og konfigurer serielle indstillinger (baudrate, parity, etc.)
+  - Sæt device ID range til at scanne (standard: 1-247)
+  - Klik "Start Scan" for automatisk at finde Modbus enheder på seriel bus
+- **TCP Scanner Tab:**
+  - Indtast IP range (f.eks. "192.168.1.1-254" eller "192.168.1.0/24" for CIDR notation)
+  - Indtast porte til at scanne (f.eks. "502" eller "502,5020" for flere porte)
+  - Sæt device ID range til at scanne (standard: 1-247)
+  - Klik "Start Scan" for automatisk at finde Modbus TCP enheder på netværket
+- **Funktioner:**
+  - Resultater viser tilgængelige register typer og aktive adresser
+  - **Gem som PDF:** Klik "Save as PDF" knap for at eksportere device information
+  - **Importer Connection:** Højreklik på funden enhed → "Import Connection" for at oprette connection profile
+  - **Importer Session:** Højreklik på funden enhed → "Import Session" for at oprette connection og session automatisk
+  - Bemærk: Kun adresser med aktive værdier vises (non-zero for registre, True for coils)
 
 **Tag Management:**
 - Klik "Manage Tags..." i en session tab
