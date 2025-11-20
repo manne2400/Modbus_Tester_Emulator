@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 import serial.tools.list_ports
+from src.ui.styles.theme import Theme
 
 
 class SimulatorDialog(QDialog):
@@ -255,104 +256,5 @@ class SimulatorDialog(QDialog):
     
     def _apply_dark_theme(self):
         """Apply dark theme styling"""
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #1e1e1e;
-                color: #d4d4d4;
-            }
-            QGroupBox {
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                margin-top: 10px;
-                padding-top: 10px;
-                color: #cccccc;
-                font-weight: 500;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-            }
-            QLabel {
-                color: #cccccc;
-            }
-            QComboBox {
-                background-color: #3c3c3c;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                padding: 4px 8px;
-                color: #cccccc;
-            }
-            QComboBox:hover {
-                border-color: #007acc;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                color: #cccccc;
-                selection-background-color: #094771;
-            }
-            QSpinBox {
-                background-color: #3c3c3c;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                padding: 4px;
-                color: #cccccc;
-            }
-            QSpinBox:hover {
-                border-color: #007acc;
-            }
-            QLineEdit {
-                background-color: #3c3c3c;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                padding: 4px 8px;
-                color: #cccccc;
-            }
-            QLineEdit:hover {
-                border-color: #007acc;
-            }
-            QLineEdit:focus {
-                border: 2px solid #007acc;
-            }
-            QPushButton {
-                background-color: #0e639c;
-                color: white;
-                border: none;
-                padding: 6px 16px;
-                border-radius: 3px;
-                font-weight: 500;
-            }
-            QPushButton:hover {
-                background-color: #1177bb;
-            }
-            QPushButton:pressed {
-                background-color: #094771;
-            }
-            QPushButton:disabled {
-                background-color: #3e3e42;
-                color: #6e6e6e;
-            }
-            QTabWidget::pane {
-                border: 1px solid #3e3e42;
-                background-color: #1e1e1e;
-                border-radius: 3px;
-            }
-            QTabBar::tab {
-                background-color: #2d2d30;
-                color: #cccccc;
-                padding: 6px 12px;
-                margin-right: 2px;
-                border-top-left-radius: 3px;
-                border-top-right-radius: 3px;
-            }
-            QTabBar::tab:selected {
-                background-color: #1e1e1e;
-                border-bottom: 2px solid #007acc;
-                color: #ffffff;
-            }
-            QTabBar::tab:hover {
-                background-color: #37373d;
-            }
-        """)
+        Theme.apply_to_widget(self)
 

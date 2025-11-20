@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QTextBrow
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from src import __version__
+from src.ui.styles.theme import Theme
 
 
 class AboutDialog(QDialog):
@@ -21,8 +22,8 @@ class AboutDialog(QDialog):
     def _setup_ui(self):
         """Setup user interface"""
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(Theme.SPACING_STANDARD)
+        layout.setContentsMargins(Theme.MARGIN_STANDARD, Theme.MARGIN_STANDARD, Theme.MARGIN_STANDARD, Theme.MARGIN_STANDARD)
         
         # Title
         title = QLabel("Modbus Tester")
@@ -70,32 +71,4 @@ class AboutDialog(QDialog):
     
     def _apply_dark_theme(self):
         """Apply dark theme styling"""
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #1e1e1e;
-                color: #d4d4d4;
-            }
-            QLabel {
-                color: #cccccc;
-            }
-            QTextBrowser {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                color: #cccccc;
-            }
-            QPushButton {
-                background-color: #0e639c;
-                color: white;
-                border: none;
-                padding: 6px 16px;
-                border-radius: 3px;
-                font-weight: 500;
-            }
-            QPushButton:hover {
-                background-color: #1177bb;
-            }
-            QPushButton:pressed {
-                background-color: #094771;
-            }
-        """)
+        Theme.apply_to_widget(self)

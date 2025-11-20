@@ -17,6 +17,7 @@ from src.ui.help_dialog import HelpDialog
 from src.ui.multi_view_dialog import MultiViewDialog
 from src.ui.simulator_dialog import SimulatorDialog
 from src.ui.device_scanner_dialog import DeviceScannerDialog
+from src.ui.styles.theme import Theme
 from src.application.simulator_manager import SimulatorManager
 from src.storage.config_manager import ConfigManager
 from src.storage.project_manager import ProjectManager
@@ -89,8 +90,8 @@ class MainWindow(QMainWindow):
         
         # Main layout
         main_layout = QHBoxLayout(central_widget)
-        main_layout.setContentsMargins(10, 10, 10, 10)
-        main_layout.setSpacing(10)
+        main_layout.setContentsMargins(Theme.MARGIN_STANDARD, Theme.MARGIN_STANDARD, Theme.MARGIN_STANDARD, Theme.MARGIN_STANDARD)
+        main_layout.setSpacing(Theme.SPACING_STANDARD)
         
         # Splitter
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -99,7 +100,7 @@ class MainWindow(QMainWindow):
         # Left side: Connection tree in GroupBox
         connections_group = QGroupBox("Connections")
         connections_layout = QVBoxLayout()
-        connections_layout.setContentsMargins(5, 5, 5, 5)
+        connections_layout.setContentsMargins(Theme.MARGIN_COMPACT, Theme.MARGIN_COMPACT, Theme.MARGIN_COMPACT, Theme.MARGIN_COMPACT)
         self.connection_tree = ConnectionTree()
         self.connection_tree.connection_selected.connect(self._on_connection_selected)
         self.connection_tree.new_connection_requested.connect(self._on_new_connection)
@@ -115,7 +116,7 @@ class MainWindow(QMainWindow):
         # Right side: Session container in GroupBox
         sessions_group = QGroupBox("Sessions")
         sessions_layout = QVBoxLayout()
-        sessions_layout.setContentsMargins(5, 5, 5, 5)
+        sessions_layout.setContentsMargins(Theme.MARGIN_COMPACT, Theme.MARGIN_COMPACT, Theme.MARGIN_COMPACT, Theme.MARGIN_COMPACT)
         sessions_layout.addWidget(self.session_container)
         sessions_group.setLayout(sessions_layout)
         self.main_splitter.addWidget(sessions_group)
@@ -241,282 +242,7 @@ class MainWindow(QMainWindow):
     
     def _apply_styling(self):
         """Apply dark theme styling to the application"""
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #1e1e1e;
-                color: #d4d4d4;
-            }
-            QMenuBar {
-                background-color: #252526;
-                border-bottom: 1px solid #3e3e42;
-                padding: 2px;
-                color: #cccccc;
-            }
-            QMenuBar::item {
-                background-color: transparent;
-                padding: 4px 8px;
-                border-radius: 3px;
-            }
-            QMenuBar::item:selected {
-                background-color: #2a2d2e;
-            }
-            QMenuBar::item:pressed {
-                background-color: #37373d;
-            }
-            QMenu {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                color: #cccccc;
-            }
-            QMenu::item:selected {
-                background-color: #094771;
-            }
-            QToolBar {
-                background-color: #252526;
-                border: none;
-                border-bottom: 1px solid #3e3e42;
-                spacing: 3px;
-                padding: 3px;
-            }
-            QToolBar::separator {
-                background-color: #3e3e42;
-                width: 1px;
-                margin: 3px;
-            }
-            QStatusBar {
-                background-color: #252526;
-                border-top: 1px solid #3e3e42;
-                color: #cccccc;
-            }
-            QTabWidget::pane {
-                border: 1px solid #3e3e42;
-                background-color: #1e1e1e;
-                border-radius: 3px;
-            }
-            QTabBar::tab {
-                background-color: #2d2d30;
-                color: #cccccc;
-                padding: 6px 12px;
-                margin-right: 2px;
-                border-top-left-radius: 3px;
-                border-top-right-radius: 3px;
-            }
-            QTabBar::tab:selected {
-                background-color: #1e1e1e;
-                border-bottom: 2px solid #007acc;
-                color: #ffffff;
-            }
-            QTabBar::tab:hover {
-                background-color: #37373d;
-            }
-            QPushButton {
-                background-color: #0e639c;
-                color: white;
-                border: none;
-                padding: 6px 16px;
-                border-radius: 3px;
-                font-weight: 500;
-            }
-            QPushButton:hover {
-                background-color: #1177bb;
-            }
-            QPushButton:pressed {
-                background-color: #094771;
-            }
-            QPushButton:disabled {
-                background-color: #3e3e42;
-                color: #6e6e6e;
-            }
-            QTreeWidget {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                alternate-background-color: #2d2d30;
-                color: #cccccc;
-            }
-            QTreeWidget::item {
-                padding: 3px;
-                color: #cccccc;
-            }
-            QTreeWidget::item:selected {
-                background-color: #094771;
-                color: white;
-            }
-            QTreeWidget::item:has-children {
-                font-weight: 600;
-                color: #ffffff;
-            }
-            QTableWidget {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                gridline-color: #3e3e42;
-                alternate-background-color: #2d2d30;
-                color: #cccccc;
-            }
-            QTableWidget::item {
-                padding: 4px;
-                color: #cccccc;
-            }
-            QTableWidget::item:selected {
-                background-color: #094771;
-                color: white;
-            }
-            QHeaderView::section {
-                background-color: #2d2d30;
-                padding: 6px;
-                border: none;
-                border-bottom: 2px solid #3e3e42;
-                font-weight: 600;
-                color: #cccccc;
-            }
-            QComboBox {
-                background-color: #3c3c3c;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                padding: 4px 8px;
-                min-width: 120px;
-                color: #cccccc;
-            }
-            QComboBox:hover {
-                border-color: #007acc;
-            }
-            QComboBox::drop-down {
-                border: none;
-                width: 20px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                color: #cccccc;
-                selection-background-color: #094771;
-            }
-            QSpinBox {
-                background-color: #3c3c3c;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                padding: 4px;
-                min-width: 80px;
-                color: #cccccc;
-            }
-            QSpinBox:hover {
-                border-color: #007acc;
-            }
-            QSpinBox::up-button, QSpinBox::down-button {
-                background-color: #2d2d30;
-                border: 1px solid #3e3e42;
-                border-radius: 2px;
-                width: 16px;
-            }
-            QSpinBox::up-button {
-                subcontrol-origin: border;
-                subcontrol-position: top right;
-                border-top-right-radius: 3px;
-            }
-            QSpinBox::down-button {
-                subcontrol-origin: border;
-                subcontrol-position: bottom right;
-                border-bottom-right-radius: 3px;
-            }
-            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
-                background-color: #37373d;
-            }
-            QSpinBox::up-button:pressed, QSpinBox::down-button:pressed {
-                background-color: #094771;
-            }
-            QSpinBox::up-arrow {
-                image: none;
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-bottom: 5px solid #cccccc;
-                width: 0px;
-                height: 0px;
-            }
-            QSpinBox::down-arrow {
-                image: none;
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-top: 5px solid #cccccc;
-                width: 0px;
-                height: 0px;
-            }
-            QSpinBox::up-button:hover QSpinBox::up-arrow {
-                border-bottom-color: #ffffff;
-            }
-            QSpinBox::down-button:hover QSpinBox::down-arrow {
-                border-top-color: #ffffff;
-            }
-            QLineEdit {
-                background-color: #3c3c3c;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                padding: 4px 8px;
-                color: #cccccc;
-            }
-            QLineEdit:hover {
-                border-color: #007acc;
-            }
-            QLineEdit:focus {
-                border: 2px solid #007acc;
-            }
-            QFormLayout {
-                spacing: 8px;
-            }
-            QGroupBox {
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                margin-top: 10px;
-                padding-top: 10px;
-                color: #cccccc;
-                font-weight: 500;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-            }
-            QLabel {
-                color: #cccccc;
-            }
-            QTextEdit, QTextBrowser {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                color: #cccccc;
-            }
-            QProgressBar {
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                text-align: center;
-                color: #cccccc;
-            }
-            QProgressBar::chunk {
-                background-color: #007acc;
-                border-radius: 2px;
-            }
-            QListWidget {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                color: #cccccc;
-            }
-            QListWidget::item:selected {
-                background-color: #094771;
-                color: white;
-            }
-            QSplitter::handle {
-                background-color: #3e3e42;
-            }
-            QSplitter::handle:horizontal {
-                width: 3px;
-            }
-            QSplitter::handle:vertical {
-                height: 3px;
-            }
-            QMessageBox QLabel {
-                color: #000000;
-            }
-        """)
+        Theme.apply_to_widget(self)
     
     def _load_ui_settings(self):
         """Load UI settings (window geometry and splitter sizes)"""

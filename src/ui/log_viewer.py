@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from datetime import datetime
 from src.models.log_entry import LogEntry, LogDirection
+from src.ui.styles.theme import Theme
 from typing import List, Optional
 
 
@@ -149,66 +150,4 @@ class LogViewer(QWidget):
     
     def _apply_dark_theme(self):
         """Apply dark theme styling"""
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #1e1e1e;
-                color: #d4d4d4;
-            }
-            QLabel {
-                color: #cccccc;
-            }
-            QComboBox {
-                background-color: #3c3c3c;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                padding: 4px 8px;
-                color: #cccccc;
-            }
-            QComboBox:hover {
-                border-color: #007acc;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                color: #cccccc;
-                selection-background-color: #094771;
-            }
-            QPushButton {
-                background-color: #0e639c;
-                color: white;
-                border: none;
-                padding: 6px 16px;
-                border-radius: 3px;
-                font-weight: 500;
-            }
-            QPushButton:hover {
-                background-color: #1177bb;
-            }
-            QPushButton:pressed {
-                background-color: #094771;
-            }
-            QTableWidget {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                gridline-color: #3e3e42;
-                alternate-background-color: #2d2d30;
-                color: #cccccc;
-            }
-            QTableWidget::item {
-                padding: 4px;
-                color: #cccccc;
-            }
-            QTableWidget::item:selected {
-                background-color: #094771;
-                color: white;
-            }
-            QHeaderView::section {
-                background-color: #2d2d30;
-                padding: 6px;
-                border: none;
-                border-bottom: 2px solid #3e3e42;
-                font-weight: 600;
-                color: #cccccc;
-            }
-        """)
+        Theme.apply_to_widget(self)

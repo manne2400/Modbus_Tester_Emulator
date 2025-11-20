@@ -15,6 +15,7 @@ from src.ui.data_table import DataTable
 from src.ui.widgets.status_bar import StatusBar
 from src.ui.tag_dialog import TagDialog
 from src.models.tag_definition import TagDefinition, AddressType
+from src.ui.styles.theme import Theme
 from typing import List
 
 
@@ -46,17 +47,17 @@ class SessionTab(QWidget):
     def _setup_ui(self):
         """Setup user interface"""
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(Theme.SPACING_STANDARD)
+        layout.setContentsMargins(Theme.MARGIN_STANDARD, Theme.MARGIN_STANDARD, Theme.MARGIN_STANDARD, Theme.MARGIN_STANDARD)
         
         # Controls panel - split into two columns
         controls_widget = QWidget()
         controls_layout = QHBoxLayout(controls_widget)
-        controls_layout.setSpacing(15)
+        controls_layout.setSpacing(Theme.SPACING_STANDARD)
         
         # Left column - form fields
         left_form = QFormLayout()
-        left_form.setSpacing(8)
+        left_form.setSpacing(Theme.SPACING_FORM)
         
         # Connection dropdown
         self.connection_combo = QComboBox()
@@ -94,7 +95,7 @@ class SessionTab(QWidget):
         
         # Right column - more fields
         right_form = QFormLayout()
-        right_form.setSpacing(8)
+        right_form.setSpacing(Theme.SPACING_FORM)
         
         # Start address
         self.address_spin = QSpinBox()
@@ -128,21 +129,31 @@ class SessionTab(QWidget):
         # Start/Stop button - large and prominent
         self.start_stop_btn = QPushButton("Start")
         self.start_stop_btn.setMinimumSize(120, 40)
+        # Apply base styling with larger size for start/stop button
         self.start_stop_btn.setStyleSheet("""
             QPushButton {
-                background-color: #0078d4;
+                background-color: #0e639c;
                 color: white;
                 border: none;
                 padding: 10px 20px;
-                border-radius: 4px;
+                border-radius: 3px;
                 font-weight: 600;
                 font-size: 11pt;
             }
             QPushButton:hover {
-                background-color: #106ebe;
+                background-color: #1177bb;
             }
             QPushButton:pressed {
-                background-color: #005a9e;
+                background-color: #094771;
+            }
+            QPushButton[status="running"] {
+                background-color: #d32f2f;
+            }
+            QPushButton[status="running"]:hover {
+                background-color: #f44336;
+            }
+            QPushButton[status="running"]:pressed {
+                background-color: #b71c1c;
             }
         """)
         self.start_stop_btn.clicked.connect(self._toggle_polling)
@@ -333,23 +344,7 @@ class SessionTab(QWidget):
         if self.session.status == SessionStatus.RUNNING:
             self.session_manager.stop_session(self.session.name)
             self.start_stop_btn.setText("Start")
-            self.start_stop_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #0078d4;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 4px;
-                    font-weight: 600;
-                    font-size: 11pt;
-                }
-                QPushButton:hover {
-                    background-color: #106ebe;
-                }
-                QPushButton:pressed {
-                    background-color: #005a9e;
-                }
-            """)
+            self.start_stop_btn.setProperty("status", "")
         else:
             # Ensure connection is established
             if not self.session_manager.connect(self.session.connection_profile_name):
@@ -357,26 +352,13 @@ class SessionTab(QWidget):
                 return
             self.session_manager.start_session(self.session.name)
             self.start_stop_btn.setText("Stop")
-            self.start_stop_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #d32f2f;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 4px;
-                    font-weight: 600;
-                    font-size: 11pt;
-                }
-                QPushButton:hover {
-                    background-color: #b71c1c;
-                }
-                QPushButton:pressed {
-                    background-color: #8b0000;
-                }
-            """)
+            self.start_stop_btn.setProperty("status", "running")
             # Reset poll timer to poll immediately
             self.polling_engine.reset_poll_timer(self.session.name)
         
+        # Refresh style to apply property changes
+        self.start_stop_btn.style().unpolish(self.start_stop_btn)
+        self.start_stop_btn.style().polish(self.start_stop_btn)
         self.update_status()
     
     def update_status(self):
@@ -384,63 +366,18 @@ class SessionTab(QWidget):
         if self.session.status == SessionStatus.RUNNING:
             self.status_bar.update_status("Kører...", error=False)
             self.start_stop_btn.setText("Stop")
-            self.start_stop_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #d32f2f;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 4px;
-                    font-weight: 600;
-                    font-size: 11pt;
-                }
-                QPushButton:hover {
-                    background-color: #b71c1c;
-                }
-                QPushButton:pressed {
-                    background-color: #8b0000;
-                }
-            """)
+            self.start_stop_btn.setProperty("status", "running")
         elif self.session.status == SessionStatus.ERROR:
             self.status_bar.update_status("Error", error=True)
             self.start_stop_btn.setText("Start")
-            self.start_stop_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #0078d4;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 4px;
-                    font-weight: 600;
-                    font-size: 11pt;
-                }
-                QPushButton:hover {
-                    background-color: #106ebe;
-                }
-                QPushButton:pressed {
-                    background-color: #005a9e;
-                }
-            """)
+            self.start_stop_btn.setProperty("status", "")
         else:
             self.status_bar.update_status("Stoppet", error=False)
             self.start_stop_btn.setText("Start")
-            self.start_stop_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #0078d4;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 4px;
-                    font-weight: 600;
-                    font-size: 11pt;
-                }
-                QPushButton:hover {
-                    background-color: #106ebe;
-                }
-                QPushButton:pressed {
-                    background-color: #005a9e;
-                }
-            """)
+            self.start_stop_btn.setProperty("status", "")
+            # Refresh style to apply property changes
+            self.start_stop_btn.style().unpolish(self.start_stop_btn)
+            self.start_stop_btn.style().polish(self.start_stop_btn)
     
     def update_data(self, result: PollResult):
         """Update data table with poll result"""

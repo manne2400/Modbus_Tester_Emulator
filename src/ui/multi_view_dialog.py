@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from typing import Dict, List
+from src.ui.styles.theme import Theme
 
 
 class MultiViewDialog(QDialog):
@@ -225,41 +226,5 @@ class MultiViewDialog(QDialog):
     
     def _apply_dark_theme(self):
         """Apply dark theme styling"""
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #1e1e1e;
-                color: #d4d4d4;
-            }
-            QLabel {
-                color: #cccccc;
-            }
-            QListWidget {
-                background-color: #252526;
-                border: 1px solid #3e3e42;
-                border-radius: 3px;
-                color: #cccccc;
-            }
-            QListWidget::item:selected {
-                background-color: #094771;
-                color: white;
-            }
-            QPushButton {
-                background-color: #0e639c;
-                color: white;
-                border: none;
-                padding: 6px 16px;
-                border-radius: 3px;
-                font-weight: 500;
-            }
-            QPushButton:hover {
-                background-color: #1177bb;
-            }
-            QPushButton:pressed {
-                background-color: #094771;
-            }
-            QPushButton:disabled {
-                background-color: #3e3e42;
-                color: #6e6e6e;
-            }
-        """)
+        Theme.apply_to_widget(self)
 
