@@ -1,7 +1,8 @@
 """Main window for Modbus Tester application"""
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
-    QMenuBar, QMenu, QToolBar, QStatusBar, QTabWidget, QMessageBox
+    QMenuBar, QMenu, QToolBar, QStatusBar, QTabWidget, QMessageBox,
+    QGroupBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QAction, QIcon, QFont
@@ -71,6 +72,7 @@ class MainWindow(QMainWindow):
         self.session_tab_widgets: dict[str, SessionTab] = {}
         
         self._setup_ui()
+        self._load_ui_settings()
         self._load_configuration()
         
         # Start polling engine
@@ -84,13 +86,17 @@ class MainWindow(QMainWindow):
         
         # Main layout
         main_layout = QHBoxLayout(central_widget)
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
         
         # Splitter
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        main_layout.addWidget(splitter)
+        self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        main_layout.addWidget(self.main_splitter)
         
-        # Left side: Connection tree
+        # Left side: Connection tree in GroupBox
+        connections_group = QGroupBox("Connections")
+        connections_layout = QVBoxLayout()
+        connections_layout.setContentsMargins(5, 5, 5, 5)
         self.connection_tree = ConnectionTree()
         self.connection_tree.connection_selected.connect(self._on_connection_selected)
         self.connection_tree.new_connection_requested.connect(self._on_new_connection)
@@ -98,12 +104,19 @@ class MainWindow(QMainWindow):
         self.connection_tree.delete_connection_requested.connect(self._on_delete_connection)
         self.connection_tree.new_session_requested.connect(self._on_new_session)
         self.connection_tree.multi_view_group_selected.connect(self._on_multi_view_group_selected)
-        splitter.addWidget(self.connection_tree)
-        splitter.setStretchFactor(0, 0)
+        connections_layout.addWidget(self.connection_tree)
+        connections_group.setLayout(connections_layout)
+        self.main_splitter.addWidget(connections_group)
+        self.main_splitter.setStretchFactor(0, 0)
         
-        # Right side: Session container (supports single and multi-view)
-        splitter.addWidget(self.session_container)
-        splitter.setStretchFactor(1, 1)
+        # Right side: Session container in GroupBox
+        sessions_group = QGroupBox("Sessions")
+        sessions_layout = QVBoxLayout()
+        sessions_layout.setContentsMargins(5, 5, 5, 5)
+        sessions_layout.addWidget(self.session_container)
+        sessions_group.setLayout(sessions_layout)
+        self.main_splitter.addWidget(sessions_group)
+        self.main_splitter.setStretchFactor(1, 1)
         
         # Menu bar
         self._create_menu_bar()
@@ -111,8 +124,8 @@ class MainWindow(QMainWindow):
         # Toolbar
         self._create_toolbar()
         
-        # Status bar
-        self.statusBar().showMessage("Ready")
+        # Hide status bar (remove blue line)
+        self.statusBar().hide()
     
     def _create_menu_bar(self):
         """Create menu bar"""
@@ -268,9 +281,9 @@ class MainWindow(QMainWindow):
                 margin: 3px;
             }
             QStatusBar {
-                background-color: #007acc;
+                background-color: #252526;
                 border-top: 1px solid #3e3e42;
-                color: white;
+                color: #cccccc;
             }
             QTabWidget::pane {
                 border: 1px solid #3e3e42;
@@ -389,9 +402,46 @@ class MainWindow(QMainWindow):
             QSpinBox::up-button, QSpinBox::down-button {
                 background-color: #2d2d30;
                 border: 1px solid #3e3e42;
+                border-radius: 2px;
+                width: 16px;
+            }
+            QSpinBox::up-button {
+                subcontrol-origin: border;
+                subcontrol-position: top right;
+                border-top-right-radius: 3px;
+            }
+            QSpinBox::down-button {
+                subcontrol-origin: border;
+                subcontrol-position: bottom right;
+                border-bottom-right-radius: 3px;
             }
             QSpinBox::up-button:hover, QSpinBox::down-button:hover {
                 background-color: #37373d;
+            }
+            QSpinBox::up-button:pressed, QSpinBox::down-button:pressed {
+                background-color: #094771;
+            }
+            QSpinBox::up-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-bottom: 5px solid #cccccc;
+                width: 0px;
+                height: 0px;
+            }
+            QSpinBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 5px solid #cccccc;
+                width: 0px;
+                height: 0px;
+            }
+            QSpinBox::up-button:hover QSpinBox::up-arrow {
+                border-bottom-color: #ffffff;
+            }
+            QSpinBox::down-button:hover QSpinBox::down-arrow {
+                border-top-color: #ffffff;
             }
             QLineEdit {
                 background-color: #3c3c3c;
@@ -460,19 +510,35 @@ class MainWindow(QMainWindow):
             QSplitter::handle:vertical {
                 height: 3px;
             }
-            QMessageBox {
-                background-color: #1e1e1e;
-                color: #000000;
-            }
             QMessageBox QLabel {
                 color: #000000;
-                background-color: #ffffff;
-                padding: 10px;
-            }
-            QMessageBox QPushButton {
-                min-width: 80px;
             }
         """)
+    
+    def _load_ui_settings(self):
+        """Load UI settings (window geometry and splitter sizes)"""
+        window_geometry, splitter_sizes = self.config_manager.load_ui_settings()
+        
+        if window_geometry:
+            x = window_geometry.get("x", 100)
+            y = window_geometry.get("y", 100)
+            width = window_geometry.get("width", 1400)
+            height = window_geometry.get("height", 800)
+            self.setGeometry(x, y, width, height)
+        
+        if splitter_sizes and len(splitter_sizes) >= 2:
+            self.main_splitter.setSizes(splitter_sizes)
+    
+    def _save_ui_settings(self):
+        """Save UI settings (window geometry and splitter sizes)"""
+        geometry = {
+            "x": self.geometry().x(),
+            "y": self.geometry().y(),
+            "width": self.geometry().width(),
+            "height": self.geometry().height()
+        }
+        splitter_sizes = self.main_splitter.sizes()
+        self.config_manager.save_ui_settings(geometry, splitter_sizes)
     
     def _load_configuration(self):
         """Load saved configuration"""
@@ -876,8 +942,8 @@ class MainWindow(QMainWindow):
                 QMessageBox.information(
                     self,
                     "Multi-view",
-                    "Ingen grupper er oprettet endnu.\n"
-                    "Brug 'Administrer multi-view...' til at oprette grupper."
+                    "No groups have been created yet.\n"
+                    "Use 'Manage Multi-view...' to create groups."
                 )
                 self.multi_view_action.setChecked(False)
                 self.multi_view_active = False
@@ -977,6 +1043,9 @@ class MainWindow(QMainWindow):
     
     def closeEvent(self, event):
         """Handle window close"""
+        # Save UI settings
+        self._save_ui_settings()
+        
         # Save configuration
         self.config_manager.save_connections(self.connections)
         self.config_manager.save_sessions(list(self.sessions.values()))

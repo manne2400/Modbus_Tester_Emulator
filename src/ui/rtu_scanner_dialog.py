@@ -218,10 +218,33 @@ class RtuScannerDialog(QDialog):
                 border: 1px solid #3e3e42;
                 border-radius: 3px;
                 padding: 4px 8px;
+                padding-right: 30px;
                 color: #cccccc;
             }
             QComboBox:hover {
                 border-color: #007acc;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+                background-color: #2d2d30;
+                border-left: 1px solid #3e3e42;
+                border-top-right-radius: 3px;
+                border-bottom-right-radius: 3px;
+            }
+            QComboBox::drop-down:hover {
+                background-color: #37373d;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 5px solid #cccccc;
+                width: 0px;
+                height: 0px;
+            }
+            QComboBox::down-arrow:hover {
+                border-top-color: #ffffff;
             }
             QComboBox QAbstractItemView {
                 background-color: #252526;

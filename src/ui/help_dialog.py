@@ -94,7 +94,18 @@ class HelpDialog(QDialog):
             <li>Slave ID: 1</li>
         </ul>
         
-        <h3>2. Create a connection</h3>
+        <h3>2. Scan for RTU devices (optional)</h3>
+        <p>If you're working with RTU devices and don't know the device IDs, you can use the RTU Device Scanner:</p>
+        <ul>
+            <li>Go to <b>Connection → RTU Device Scanner...</b></li>
+            <li>Select the COM port and configure serial settings (baudrate, parity, etc.)</li>
+            <li>Set the device ID range to scan (default: 1-247)</li>
+            <li>Click <b>"Start Scan"</b> to automatically discover Modbus devices</li>
+            <li>The scanner will find devices and show which register types are available</li>
+            <li><b>Note:</b> Only addresses with active values are shown (coils/discrete inputs with value=1, registers with value≠0)</li>
+        </ul>
+        
+        <h3>3. Create a connection</h3>
         <p>Go to <b>Connection → New Connection...</b> or click "New Connection" in the toolbar.</p>
         <p><b>For TCP:</b></p>
         <ul>
@@ -114,7 +125,7 @@ class HelpDialog(QDialog):
         </ul>
         <p><b>Tip:</b> Connections are automatically grouped by type (TCP/RTU) in the connection tree.</p>
         
-        <h3>3. Create a session</h3>
+        <h3>4. Create a session</h3>
         <p>Go to <b>Session → New Session...</b> or click "New Session" in the toolbar.</p>
         <p>Configure the session:</p>
         <ul>
@@ -126,7 +137,7 @@ class HelpDialog(QDialog):
             <li><b>Poll Interval:</b> How often data should be read (in milliseconds, e.g. 1000)</li>
         </ul>
         
-        <h3>4. Manage Tags (optional)</h3>
+        <h3>5. Manage Tags (optional)</h3>
         <p>To get names, data types and scaling on your data:</p>
         <ul>
             <li>Click the <b>"Manage Tags..."</b> button in the session tab</li>
@@ -145,7 +156,7 @@ class HelpDialog(QDialog):
             <li><b>Important:</b> Tags with incorrect address_type will be ignored. Make sure address_type matches function code!</li>
         </ul>
         
-        <h3>5. Start polling</h3>
+        <h3>6. Start polling</h3>
         <p>Click the <b>"Start"</b> button in the session tab to begin reading data.</p>
         <p>Data will be displayed in the table below with:</p>
         <ul>
@@ -158,7 +169,7 @@ class HelpDialog(QDialog):
             <li><b>Status:</b> OK, Timeout, Error, etc.</li>
         </ul>
         
-        <h3>6. Multi-view (optional)</h3>
+        <h3>7. Multi-view (optional)</h3>
         <p>To see multiple sessions simultaneously side by side:</p>
         <ul>
             <li>Go to <b>View → Manage Multi-view...</b></li>
@@ -328,6 +339,16 @@ class HelpDialog(QDialog):
             <li>Try clicking on the group in the connection tree</li>
         </ul>
         
+        <h3>RTU Device Scanner</h3>
+        <p><b>Scanner does not find devices:</b></p>
+        <ul>
+            <li>Check that the COM port is correct and available</li>
+            <li>Check that baudrate, parity, stop bits match the device</li>
+            <li>Try a smaller device ID range (e.g. 1-10) to speed up scanning</li>
+            <li>Some devices may not respond to all function codes - this is normal</li>
+            <li>Note: Scanner only shows addresses with active values (non-zero for registers, True for coils)</li>
+        </ul>
+        
         <h3>Log viewer</h3>
         <p>Use <b>View → Show Log</b> to see detailed TX/RX messages with hexdump.</p>
         <p>This helps diagnose protocol problems.</p>
@@ -398,6 +419,25 @@ class HelpDialog(QDialog):
             </li>
             <li>The simulator stops automatically when the application closes</li>
             <li>You can have both TCP and RTU simulator running simultaneously</li>
+        </ul>
+        
+        <h3>RTU Device Scanner</h3>
+        <ul>
+            <li>Use <b>Connection → RTU Device Scanner...</b> to automatically discover Modbus devices on a serial bus</li>
+            <li>Configure COM port and serial settings to match your bus</li>
+            <li>Set device ID range (default 1-247, but you can limit it for faster scanning)</li>
+            <li>The scanner tests each device ID and identifies available register types</li>
+            <li>Results show which addresses have active values (non-zero for registers, True for coils)</li>
+            <li>Use the scanner to quickly identify device IDs and available data on an unknown RTU network</li>
+        </ul>
+        
+        <h3>User Interface</h3>
+        <ul>
+            <li>The application uses a dark theme for reduced eye strain</li>
+            <li>Connections and Sessions are organized in resizable panels with borders</li>
+            <li>You can resize the splitter between Connections and Sessions panels</li>
+            <li>Window position and splitter sizes are automatically saved and restored</li>
+            <li>Use the log viewer (<b>View → Show Log</b>) to monitor all Modbus communication</li>
         </ul>
         """)
         tabs.addTab(tips, "Tips")

@@ -22,6 +22,7 @@ class ConfigManager:
         self.connections_file = self.config_dir / "connections.json"
         self.sessions_file = self.config_dir / "sessions.json"
         self.project_file = self.config_dir / "last_project.json"
+        self.ui_settings_file = self.config_dir / "ui_settings.json"
     
     def save_connections(self, connections: List[ConnectionProfile]) -> bool:
         """Save connection profiles to file"""
@@ -88,3 +89,35 @@ class ConfigManager:
         except Exception as e:
             logger.error(f"Failed to load sessions: {e}")
             return []
+    
+    def save_ui_settings(self, window_geometry: Dict[str, int], splitter_sizes: List[int]) -> bool:
+        """Save UI settings (window geometry and splitter sizes)"""
+        try:
+            data = {
+                "window_geometry": window_geometry,
+                "splitter_sizes": splitter_sizes
+            }
+            with open(self.ui_settings_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            logger.info("Saved UI settings")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save UI settings: {e}")
+            return False
+    
+    def load_ui_settings(self) -> tuple[Dict[str, int], List[int]]:
+        """Load UI settings (window geometry and splitter sizes)"""
+        try:
+            if not self.ui_settings_file.exists():
+                return {}, []
+            
+            with open(self.ui_settings_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            window_geometry = data.get("window_geometry", {})
+            splitter_sizes = data.get("splitter_sizes", [])
+            logger.info("Loaded UI settings")
+            return window_geometry, splitter_sizes
+        except Exception as e:
+            logger.error(f"Failed to load UI settings: {e}")
+            return {}, []
