@@ -16,7 +16,7 @@ from src.ui.about_dialog import AboutDialog
 from src.ui.help_dialog import HelpDialog
 from src.ui.multi_view_dialog import MultiViewDialog
 from src.ui.simulator_dialog import SimulatorDialog
-from src.ui.rtu_scanner_dialog import RtuScannerDialog
+from src.ui.device_scanner_dialog import DeviceScannerDialog
 from src.application.simulator_manager import SimulatorManager
 from src.storage.config_manager import ConfigManager
 from src.storage.project_manager import ProjectManager
@@ -161,9 +161,9 @@ class MainWindow(QMainWindow):
         
         connection_menu.addSeparator()
         
-        rtu_scanner_action = QAction("RTU Device Scanner...", self)
-        rtu_scanner_action.triggered.connect(self._show_rtu_scanner)
-        connection_menu.addAction(rtu_scanner_action)
+        device_scanner_action = QAction("Device Scanner...", self)
+        device_scanner_action.triggered.connect(self._show_device_scanner)
+        connection_menu.addAction(device_scanner_action)
         
         # Session menu
         session_menu = menubar.addMenu("Session")
@@ -1036,9 +1036,9 @@ class MainWindow(QMainWindow):
         dialog = SimulatorDialog(self, self.simulator_manager)
         dialog.exec()
     
-    def _show_rtu_scanner(self):
-        """Show RTU device scanner dialog"""
-        dialog = RtuScannerDialog(self)
+    def _show_device_scanner(self):
+        """Show device scanner dialog (RTU and TCP)"""
+        dialog = DeviceScannerDialog(self)
         dialog.exec()
     
     def closeEvent(self, event):
