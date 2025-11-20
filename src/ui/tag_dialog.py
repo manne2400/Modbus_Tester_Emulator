@@ -20,6 +20,7 @@ class TagDialog(QDialog):
         self.tag = tag
         
         self._setup_ui()
+        self._apply_dark_theme()
         
         if tag:
             self._load_tag(tag)
@@ -164,4 +165,83 @@ class TagDialog(QDialog):
             scale_offset=self.scale_offset_spin.value(),
             unit=self.unit_edit.text().strip()
         )
+    
+    def _apply_dark_theme(self):
+        """Apply dark theme styling"""
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+            }
+            QGroupBox {
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                margin-top: 10px;
+                padding-top: 10px;
+                color: #cccccc;
+                font-weight: 500;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+            }
+            QLabel {
+                color: #cccccc;
+            }
+            QComboBox {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px 8px;
+                color: #cccccc;
+            }
+            QComboBox:hover {
+                border-color: #007acc;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #252526;
+                border: 1px solid #3e3e42;
+                color: #cccccc;
+                selection-background-color: #094771;
+            }
+            QSpinBox, QDoubleSpinBox {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px;
+                color: #cccccc;
+            }
+            QSpinBox:hover, QDoubleSpinBox:hover {
+                border-color: #007acc;
+            }
+            QLineEdit {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px 8px;
+                color: #cccccc;
+            }
+            QLineEdit:hover {
+                border-color: #007acc;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007acc;
+            }
+            QDialogButtonBox QPushButton {
+                background-color: #0e639c;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                border-radius: 3px;
+                font-weight: 500;
+                min-width: 80px;
+            }
+            QDialogButtonBox QPushButton:hover {
+                background-color: #1177bb;
+            }
+            QDialogButtonBox QPushButton:pressed {
+                background-color: #094771;
+            }
+        """)
 

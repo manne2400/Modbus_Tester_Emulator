@@ -19,7 +19,7 @@ class MultiViewDialog(QDialog):
             parent: Parent widget
         """
         super().__init__(parent)
-        self.setWindowTitle("Administrer Multi-view")
+        self.setWindowTitle("Manage Multi-view")
         self.setMinimumSize(600, 500)
         self.setModal(True)
         
@@ -27,6 +27,7 @@ class MultiViewDialog(QDialog):
         self.groups: Dict[str, List[str]] = current_groups.copy()
         
         self._setup_ui()
+        self._apply_dark_theme()
         self._update_group_list()
     
     def _setup_ui(self):
@@ -159,8 +160,8 @@ class MultiViewDialog(QDialog):
         group_name = selected_items[0].data(Qt.ItemDataRole.UserRole)
         reply = QMessageBox.question(
             self,
-            "Slet gruppe",
-            f"Er du sikker på at du vil slette gruppen '{group_name}'?",
+            "Delete Group",
+            f"Are you sure you want to delete the group '{group_name}'?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
@@ -183,7 +184,7 @@ class MultiViewDialog(QDialog):
         available = [s for s in self.session_names if s not in used_sessions]
         
         if not available:
-            QMessageBox.information(self, "Info", "Alle sessions er allerede i grupper.")
+            QMessageBox.information(self, "Info", "All sessions are already in groups.")
             return
         
         # Let user select session
@@ -221,4 +222,44 @@ class MultiViewDialog(QDialog):
         """Get configured groups"""
         # Only return groups with at least one session
         return {name: sessions for name, sessions in self.groups.items() if sessions}
+    
+    def _apply_dark_theme(self):
+        """Apply dark theme styling"""
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+            }
+            QLabel {
+                color: #cccccc;
+            }
+            QListWidget {
+                background-color: #252526;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                color: #cccccc;
+            }
+            QListWidget::item:selected {
+                background-color: #094771;
+                color: white;
+            }
+            QPushButton {
+                background-color: #0e639c;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                border-radius: 3px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #1177bb;
+            }
+            QPushButton:pressed {
+                background-color: #094771;
+            }
+            QPushButton:disabled {
+                background-color: #3e3e42;
+                color: #6e6e6e;
+            }
+        """)
 

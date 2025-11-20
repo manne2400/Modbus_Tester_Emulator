@@ -21,6 +21,7 @@ class LogViewer(QWidget):
         self.entries: List[LogEntry] = []
         
         self._setup_ui()
+        self._apply_dark_theme()
     
     def _setup_ui(self):
         """Setup user interface"""
@@ -29,18 +30,18 @@ class LogViewer(QWidget):
         # Toolbar
         toolbar_layout = QHBoxLayout()
         
-        clear_btn = QPushButton("Ryd")
+        clear_btn = QPushButton("Clear")
         clear_btn.clicked.connect(self.clear)
         toolbar_layout.addWidget(clear_btn)
         
-        toolbar_layout.addWidget(QLabel("Filtrer:"))
+        toolbar_layout.addWidget(QLabel("Filter:"))
         
         self.filter_combo = QComboBox()
-        self.filter_combo.addItems(["Alle", "TX", "RX", "Fejl"])
+        self.filter_combo.addItems(["All", "TX", "RX", "Error"])
         self.filter_combo.currentTextChanged.connect(self._apply_filter)
         toolbar_layout.addWidget(self.filter_combo)
         
-        export_btn = QPushButton("Eksporter...")
+        export_btn = QPushButton("Export...")
         export_btn.clicked.connect(self._export_log)
         toolbar_layout.addWidget(export_btn)
         
@@ -51,7 +52,7 @@ class LogViewer(QWidget):
         # Table
         self.table = QTableWidget()
         self.table.setColumnCount(4)
-        self.table.setHorizontalHeaderLabels(["Tidspunkt", "Retning", "Hex", "Kommentar"])
+        self.table.setHorizontalHeaderLabels(["Time", "Direction", "Hex", "Comment"])
         self.table.setAlternatingRowColors(True)
         self.table.horizontalHeader().setStretchLastSection(True)
         layout.addWidget(self.table)
@@ -107,13 +108,13 @@ class LogViewer(QWidget):
         self.table.setRowCount(0)
         
         for entry in self.entries:
-            if filter_text == "Alle":
+            if filter_text == "All":
                 self._add_entry_to_table(entry)
             elif filter_text == "TX" and entry.direction == LogDirection.TX:
                 self._add_entry_to_table(entry)
             elif filter_text == "RX" and entry.direction == LogDirection.RX:
                 self._add_entry_to_table(entry)
-            elif filter_text == "Fejl" and entry.error_description:
+            elif filter_text == "Error" and entry.error_description:
                 self._add_entry_to_table(entry)
     
     def clear(self):
@@ -125,14 +126,14 @@ class LogViewer(QWidget):
         """Export log to file"""
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Eksporter log",
+            "Export Log",
             "",
             "Text Files (*.txt);;CSV Files (*.csv)"
         )
         if file_path:
             try:
                 with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write("Tidspunkt\tRetning\tHex\tKommentar\n")
+                    f.write("Time\tDirection\tHex\tComment\n")
                     for entry in self.entries:
                         if isinstance(entry.timestamp, datetime):
                             timestamp_str = entry.timestamp.isoformat()
@@ -144,4 +145,70 @@ class LogViewer(QWidget):
                         f.write(f"{timestamp_str}\t{entry.direction.value}\t{entry.hex_string}\t{comment}\n")
             except Exception as e:
                 from PyQt6.QtWidgets import QMessageBox
-                QMessageBox.warning(self, "Fejl", f"Kunne ikke eksportere log: {e}")
+                QMessageBox.warning(self, "Error", f"Could not export log: {e}")
+    
+    def _apply_dark_theme(self):
+        """Apply dark theme styling"""
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+            }
+            QLabel {
+                color: #cccccc;
+            }
+            QComboBox {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px 8px;
+                color: #cccccc;
+            }
+            QComboBox:hover {
+                border-color: #007acc;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #252526;
+                border: 1px solid #3e3e42;
+                color: #cccccc;
+                selection-background-color: #094771;
+            }
+            QPushButton {
+                background-color: #0e639c;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                border-radius: 3px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #1177bb;
+            }
+            QPushButton:pressed {
+                background-color: #094771;
+            }
+            QTableWidget {
+                background-color: #252526;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                gridline-color: #3e3e42;
+                alternate-background-color: #2d2d30;
+                color: #cccccc;
+            }
+            QTableWidget::item {
+                padding: 4px;
+                color: #cccccc;
+            }
+            QTableWidget::item:selected {
+                background-color: #094771;
+                color: white;
+            }
+            QHeaderView::section {
+                background-color: #2d2d30;
+                padding: 6px;
+                border: none;
+                border-bottom: 2px solid #3e3e42;
+                font-weight: 600;
+                color: #cccccc;
+            }
+        """)

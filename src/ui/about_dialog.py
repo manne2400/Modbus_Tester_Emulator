@@ -16,6 +16,7 @@ class AboutDialog(QDialog):
         self.setFixedSize(500, 400)
         
         self._setup_ui()
+        self._apply_dark_theme()
     
     def _setup_ui(self):
         """Setup user interface"""
@@ -66,3 +67,35 @@ class AboutDialog(QDialog):
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(self.accept)
         layout.addWidget(close_btn)
+    
+    def _apply_dark_theme(self):
+        """Apply dark theme styling"""
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+            }
+            QLabel {
+                color: #cccccc;
+            }
+            QTextBrowser {
+                background-color: #252526;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                color: #cccccc;
+            }
+            QPushButton {
+                background-color: #0e639c;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                border-radius: 3px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #1177bb;
+            }
+            QPushButton:pressed {
+                background-color: #094771;
+            }
+        """)

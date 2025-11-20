@@ -2,7 +2,7 @@
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QTabWidget, QWidget,
     QLabel, QLineEdit, QSpinBox, QComboBox, QPushButton, QDialogButtonBox,
-    QFormLayout
+    QFormLayout, QGroupBox
 )
 from PyQt6.QtCore import Qt
 import serial.tools.list_ports
@@ -21,6 +21,7 @@ class ConnectionDialog(QDialog):
         self.profile = profile
         
         self._setup_ui()
+        self._apply_dark_theme()
         
         if profile:
             self._load_profile(profile)
@@ -56,44 +57,58 @@ class ConnectionDialog(QDialog):
     def _create_tcp_tab(self) -> QWidget:
         """Create TCP configuration tab"""
         widget = QWidget()
-        layout = QFormLayout(widget)
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Settings group
+        settings_group = QGroupBox("TCP Settings")
+        settings_layout = QFormLayout()
         
         # Store as instance variables
         self.tcp_name = QLineEdit()
-        self.tcp_name.setPlaceholderText("fx. PLC1")
-        layout.addRow("Name:", self.tcp_name)
+        self.tcp_name.setPlaceholderText("e.g. PLC1")
+        settings_layout.addRow("Name:", self.tcp_name)
         
         self.tcp_host = QLineEdit()
         self.tcp_host.setPlaceholderText("192.168.1.100")
-        layout.addRow("Host/IP:", self.tcp_host)
+        settings_layout.addRow("Host/IP:", self.tcp_host)
         
         self.tcp_port = QSpinBox()
         self.tcp_port.setRange(1, 65535)
         self.tcp_port.setValue(502)
-        layout.addRow("Port:", self.tcp_port)
+        settings_layout.addRow("Port:", self.tcp_port)
         
         self.tcp_timeout = QSpinBox()
         self.tcp_timeout.setRange(1, 60)
         self.tcp_timeout.setValue(3)
         self.tcp_timeout.setSuffix(" sec")
-        layout.addRow("Timeout:", self.tcp_timeout)
+        settings_layout.addRow("Timeout:", self.tcp_timeout)
         
         self.tcp_retries = QSpinBox()
         self.tcp_retries.setRange(0, 10)
         self.tcp_retries.setValue(3)
-        layout.addRow("Retries:", self.tcp_retries)
+        settings_layout.addRow("Retries:", self.tcp_retries)
+        
+        settings_group.setLayout(settings_layout)
+        layout.addWidget(settings_group)
+        layout.addStretch()
         
         return widget
     
     def _create_rtu_tab(self) -> QWidget:
         """Create RTU configuration tab"""
         widget = QWidget()
-        layout = QFormLayout(widget)
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Settings group
+        settings_group = QGroupBox("RTU Settings")
+        settings_layout = QFormLayout()
         
         # Store as instance variables
         self.rtu_name = QLineEdit()
-        self.rtu_name.setPlaceholderText("fx. RS485 Bus")
-        layout.addRow("Name:", self.rtu_name)
+        self.rtu_name.setPlaceholderText("e.g. RS485 Bus")
+        settings_layout.addRow("Name:", self.rtu_name)
         
         # COM port selection
         self.rtu_port = QComboBox()
@@ -103,39 +118,41 @@ class ConnectionDialog(QDialog):
         port_layout = QHBoxLayout()
         port_layout.addWidget(self.rtu_port)
         port_layout.addWidget(refresh_btn)
-        port_widget = QWidget()
-        port_widget.setLayout(port_layout)
-        layout.addRow("Port:", port_widget)
+        settings_layout.addRow("COM Port:", port_layout)
         
         self.rtu_baudrate = QComboBox()
         self.rtu_baudrate.addItems(["9600", "19200", "38400", "57600", "115200"])
         self.rtu_baudrate.setCurrentText("9600")
-        layout.addRow("Baudrate:", self.rtu_baudrate)
+        settings_layout.addRow("Baudrate:", self.rtu_baudrate)
         
         self.rtu_parity = QComboBox()
         self.rtu_parity.addItems(["N", "E", "O"])
-        layout.addRow("Parity:", self.rtu_parity)
+        settings_layout.addRow("Parity:", self.rtu_parity)
         
         self.rtu_stopbits = QSpinBox()
         self.rtu_stopbits.setRange(1, 2)
         self.rtu_stopbits.setValue(1)
-        layout.addRow("Stop bits:", self.rtu_stopbits)
+        settings_layout.addRow("Stop Bits:", self.rtu_stopbits)
         
         self.rtu_bytesize = QSpinBox()
         self.rtu_bytesize.setRange(7, 8)
         self.rtu_bytesize.setValue(8)
-        layout.addRow("Data bits:", self.rtu_bytesize)
+        settings_layout.addRow("Data Bits:", self.rtu_bytesize)
         
         self.rtu_timeout = QSpinBox()
         self.rtu_timeout.setRange(1, 60)
         self.rtu_timeout.setValue(3)
-        self.rtu_timeout.setSuffix(" sek")
-        layout.addRow("Timeout:", self.rtu_timeout)
+        self.rtu_timeout.setSuffix(" sec")
+        settings_layout.addRow("Timeout:", self.rtu_timeout)
         
         self.rtu_retries = QSpinBox()
         self.rtu_retries.setRange(0, 10)
         self.rtu_retries.setValue(3)
-        layout.addRow("Forsøg:", self.rtu_retries)
+        settings_layout.addRow("Retries:", self.rtu_retries)
+        
+        settings_group.setLayout(settings_layout)
+        layout.addWidget(settings_group)
+        layout.addStretch()
         
         return widget
     
@@ -219,3 +236,105 @@ class ConnectionDialog(QDialog):
                 timeout=float(self.rtu_timeout.value()),
                 retries=self.rtu_retries.value()
             )
+    
+    def _apply_dark_theme(self):
+        """Apply dark theme styling"""
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+            }
+            QGroupBox {
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                margin-top: 10px;
+                padding-top: 10px;
+                color: #cccccc;
+                font-weight: 500;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+            }
+            QLabel {
+                color: #cccccc;
+            }
+            QComboBox {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px 8px;
+                color: #cccccc;
+            }
+            QComboBox:hover {
+                border-color: #007acc;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #252526;
+                border: 1px solid #3e3e42;
+                color: #cccccc;
+                selection-background-color: #094771;
+            }
+            QSpinBox {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px;
+                color: #cccccc;
+            }
+            QSpinBox:hover {
+                border-color: #007acc;
+            }
+            QLineEdit {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px 8px;
+                color: #cccccc;
+            }
+            QLineEdit:hover {
+                border-color: #007acc;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007acc;
+            }
+            QPushButton {
+                background-color: #0e639c;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                border-radius: 3px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #1177bb;
+            }
+            QPushButton:pressed {
+                background-color: #094771;
+            }
+            QTabWidget::pane {
+                border: 1px solid #3e3e42;
+                background-color: #1e1e1e;
+                border-radius: 3px;
+            }
+            QTabBar::tab {
+                background-color: #2d2d30;
+                color: #cccccc;
+                padding: 6px 12px;
+                margin-right: 2px;
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
+            }
+            QTabBar::tab:selected {
+                background-color: #1e1e1e;
+                border-bottom: 2px solid #007acc;
+                color: #ffffff;
+            }
+            QTabBar::tab:hover {
+                background-color: #37373d;
+            }
+            QDialogButtonBox QPushButton {
+                min-width: 80px;
+            }
+        """)

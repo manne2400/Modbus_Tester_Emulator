@@ -63,6 +63,7 @@ class RtuScannerDialog(QDialog):
         self.found_devices: list[DeviceInfo] = []
         
         self._setup_ui()
+        self._apply_dark_theme()
         self._populate_com_ports()
     
     def _setup_ui(self):
@@ -189,6 +190,118 @@ class RtuScannerDialog(QDialog):
         # Connect table selection
         self.results_table.itemSelectionChanged.connect(self._on_selection_changed)
     
+    def _apply_dark_theme(self):
+        """Apply dark theme styling"""
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+            }
+            QGroupBox {
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                margin-top: 10px;
+                padding-top: 10px;
+                color: #cccccc;
+                font-weight: 500;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+            }
+            QLabel {
+                color: #cccccc;
+            }
+            QComboBox {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px 8px;
+                color: #cccccc;
+            }
+            QComboBox:hover {
+                border-color: #007acc;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #252526;
+                border: 1px solid #3e3e42;
+                color: #cccccc;
+                selection-background-color: #094771;
+            }
+            QSpinBox {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px;
+                color: #cccccc;
+            }
+            QSpinBox:hover {
+                border-color: #007acc;
+            }
+            QPushButton {
+                background-color: #0e639c;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                border-radius: 3px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #1177bb;
+            }
+            QPushButton:pressed {
+                background-color: #094771;
+            }
+            QPushButton:disabled {
+                background-color: #3e3e42;
+                color: #6e6e6e;
+            }
+            QTableWidget {
+                background-color: #252526;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                gridline-color: #3e3e42;
+                alternate-background-color: #2d2d30;
+                color: #cccccc;
+            }
+            QTableWidget::item {
+                padding: 4px;
+                color: #cccccc;
+            }
+            QTableWidget::item:selected {
+                background-color: #094771;
+                color: white;
+            }
+            QHeaderView::section {
+                background-color: #2d2d30;
+                padding: 6px;
+                border: none;
+                border-bottom: 2px solid #3e3e42;
+                font-weight: 600;
+                color: #cccccc;
+            }
+            QTextEdit {
+                background-color: #252526;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                color: #cccccc;
+            }
+            QProgressBar {
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                text-align: center;
+                color: #cccccc;
+            }
+            QProgressBar::chunk {
+                background-color: #007acc;
+                border-radius: 2px;
+            }
+            QSplitter::handle {
+                background-color: #3e3e42;
+            }
+        """)
+    
     def _populate_com_ports(self):
         """Populate COM port list"""
         self.port_combo.clear()
@@ -311,6 +424,10 @@ class RtuScannerDialog(QDialog):
         
         if device_info:
             details = f"Device ID: {device_info.device_id}\n\n"
+            details += "Note: Only addresses with active values are shown:\n"
+            details += "  • Coils/Discrete Inputs: Only addresses with value = 1 (True)\n"
+            details += "  • Registers: Only addresses with value ≠ 0\n"
+            details += "  Addresses with value 0 (False) are not included.\n\n"
             
             if device_info.has_coils:
                 details += f"Coils: {len(device_info.coil_addresses)} addresses\n"

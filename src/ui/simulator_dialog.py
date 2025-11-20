@@ -20,6 +20,7 @@ class SimulatorDialog(QDialog):
         self.simulator_manager = simulator_manager
         
         self._setup_ui()
+        self._apply_dark_theme()
         self._update_status()
         self._update_button_states()
     
@@ -167,7 +168,7 @@ class SimulatorDialog(QDialog):
             self._update_button_states()
             self._update_status()
         else:
-            QMessageBox.warning(self, "Fejl", "TCP simulator kører allerede eller kunne ikke startes.")
+            QMessageBox.warning(self, "Error", "TCP simulator is already running or could not be started.")
     
     def _stop_tcp(self):
         """Stop TCP simulator"""
@@ -187,7 +188,7 @@ class SimulatorDialog(QDialog):
         try:
             baudrate = int(self.rtu_baudrate.currentText())
         except ValueError:
-            QMessageBox.warning(self, "Fejl", "Ugyldig baudrate.")
+            QMessageBox.warning(self, "Error", "Invalid baudrate.")
             return
         
         parity_map = {"N (None)": "N", "E (Even)": "E", "O (Odd)": "O"}
@@ -197,7 +198,7 @@ class SimulatorDialog(QDialog):
             stopbits = int(self.rtu_stopbits.currentText())
             bytesize = int(self.rtu_bytesize.currentText())
         except ValueError:
-            QMessageBox.warning(self, "Fejl", "Ugyldig stop bits eller data bits.")
+            QMessageBox.warning(self, "Error", "Invalid stop bits or data bits.")
             return
         
         if self.simulator_manager.start_rtu_simulator(port, baudrate, parity, stopbits, bytesize):
@@ -206,9 +207,9 @@ class SimulatorDialog(QDialog):
         else:
             QMessageBox.warning(
                 self, 
-                "Fejl", 
-                f"RTU simulator kører allerede eller kunne ikke startes på {port}.\n"
-                f"Tjek at porten er tilgængelig og ikke bruges af et andet program."
+                "Error", 
+                f"RTU simulator is already running or could not be started on {port}.\n"
+                f"Check that the port is available and not used by another program."
             )
     
     def _stop_rtu(self):
@@ -234,9 +235,9 @@ class SimulatorDialog(QDialog):
         self.status_label.setText(status_text)
         
         if self.simulator_manager.is_tcp_running() or self.simulator_manager.is_rtu_running():
-            self.status_label.setStyleSheet("padding: 10px; color: #2e7d32; font-weight: 500;")
+            self.status_label.setStyleSheet("padding: 10px; color: #4caf50; font-weight: 500;")
         else:
-            self.status_label.setStyleSheet("padding: 10px; color: #666;")
+            self.status_label.setStyleSheet("padding: 10px; color: #cccccc;")
     
     def _update_button_states(self):
         """Update button states based on simulator status"""
@@ -251,4 +252,107 @@ class SimulatorDialog(QDialog):
         
         self.rtu_start_btn.setEnabled(not rtu_running)
         self.rtu_stop_btn.setEnabled(rtu_running)
+    
+    def _apply_dark_theme(self):
+        """Apply dark theme styling"""
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+            }
+            QGroupBox {
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                margin-top: 10px;
+                padding-top: 10px;
+                color: #cccccc;
+                font-weight: 500;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+            }
+            QLabel {
+                color: #cccccc;
+            }
+            QComboBox {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px 8px;
+                color: #cccccc;
+            }
+            QComboBox:hover {
+                border-color: #007acc;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #252526;
+                border: 1px solid #3e3e42;
+                color: #cccccc;
+                selection-background-color: #094771;
+            }
+            QSpinBox {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px;
+                color: #cccccc;
+            }
+            QSpinBox:hover {
+                border-color: #007acc;
+            }
+            QLineEdit {
+                background-color: #3c3c3c;
+                border: 1px solid #3e3e42;
+                border-radius: 3px;
+                padding: 4px 8px;
+                color: #cccccc;
+            }
+            QLineEdit:hover {
+                border-color: #007acc;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007acc;
+            }
+            QPushButton {
+                background-color: #0e639c;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                border-radius: 3px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #1177bb;
+            }
+            QPushButton:pressed {
+                background-color: #094771;
+            }
+            QPushButton:disabled {
+                background-color: #3e3e42;
+                color: #6e6e6e;
+            }
+            QTabWidget::pane {
+                border: 1px solid #3e3e42;
+                background-color: #1e1e1e;
+                border-radius: 3px;
+            }
+            QTabBar::tab {
+                background-color: #2d2d30;
+                color: #cccccc;
+                padding: 6px 12px;
+                margin-right: 2px;
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
+            }
+            QTabBar::tab:selected {
+                background-color: #1e1e1e;
+                border-bottom: 2px solid #007acc;
+                color: #ffffff;
+            }
+            QTabBar::tab:hover {
+                background-color: #37373d;
+            }
+        """)
 
