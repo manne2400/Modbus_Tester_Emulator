@@ -20,6 +20,7 @@ class SessionManager:
         self.protocols: Dict[str, ModbusProtocol] = {}  # profile_name -> protocol
         self.sessions: Dict[str, SessionDefinition] = {}  # session_id -> session
         self.log_callback = None
+        self.trace_callback = None
     
     def set_log_callback(self, callback):
         """Set callback for logging"""
@@ -27,6 +28,13 @@ class SessionManager:
         # Update existing transports
         for transport in self.connections.values():
             transport.set_log_callback(callback)
+    
+    def set_trace_callback(self, callback):
+        """Set callback for trace entries"""
+        self.trace_callback = callback
+        # Update existing transports
+        for transport in self.connections.values():
+            transport.set_trace_callback(callback)
     
     def add_connection(self, profile: ConnectionProfile) -> bool:
         """Add or update a connection profile"""
@@ -43,6 +51,10 @@ class SessionManager:
             # Set log callback if available
             if self.log_callback:
                 transport.set_log_callback(self.log_callback)
+            
+            # Set trace callback if available
+            if self.trace_callback:
+                transport.set_trace_callback(self.trace_callback)
             
             # Store transport and protocol
             self.connections[profile.name] = transport

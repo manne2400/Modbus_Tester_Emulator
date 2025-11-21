@@ -16,6 +16,21 @@ A Modbus master/simulator desktop application for testing Modbus RTU (RS-485/RS-
   - **Import Connection/Session** - Right-click on found devices to automatically import them
 - **Multi-view** - View multiple sessions side-by-side in groups
 - **Tag Management** - Define custom tags with data types, scaling, and units
+- **Device Templates & Tag Library** - Reusable tag sets for standard equipment (VAV boxes, pumps, VFDs, etc.)
+  - **Save tags as template** - Create reusable templates from session tags
+  - **Load from template** - Quickly apply standard tag sets to sessions
+  - **CSV/Excel Import/Export** - Import register overviews from suppliers or export tag lists for BMS projects
+- **Frame/Trace Analyzer** - Advanced communication analysis and diagnostics
+  - **Frame log table** - View all TX/RX telegrams with timestamps, direction, slave ID, function codes, and results
+  - **Detailed frame information** - Decoded info, raw hex, error descriptions
+  - **Statistics** - Request/response counts, timeouts per slave, average response times
+  - **Auto-diagnostics** - Automatic detection of common issues (timeouts, ID conflicts, exceptions)
+  - **Filtering** - Filter by direction, status, slave ID, function code
+- **Snapshot & Compare** - Capture and compare installation states
+  - **Take snapshots** - Capture current state of single session or all sessions
+  - **Manage snapshots** - View, compare, delete, and export snapshots
+  - **Compare snapshots** - Side-by-side comparison of two snapshots with diff highlighting
+  - **Export comparisons** - Export diff results to CSV for documentation
 - **Data Types Support** - UINT16, INT16, UINT32, INT32 (DINT), FLOAT32, BOOL
 - **HEX Display** - View hexadecimal representation of all values
 - **Dark Theme** - Modern dark interface for reduced eye strain
@@ -111,6 +126,38 @@ The simulator has the following test data:
 - Define custom tags with names, data types, byte order, scaling, and units
 - Supports: UINT16, INT16, UINT32, INT32 (DINT), FLOAT32, BOOL
 - Tags must match the session's function code (address_type)
+
+**Device Templates & Tag Library:**
+- Go to **Session → Device Templates...** to manage template library
+- **Save tags as template:** In tag management dialog, click "Save tags as template..." to create a reusable template
+- **Load from template:** In tag management dialog, click "Load from template..." to quickly apply standard tag sets
+- **Import/Export:** Import CSV/Excel files with register overviews or export templates for use in other systems
+- Templates are perfect for standard equipment (VAV boxes, pumps, VFDs, ventilation units, etc.)
+
+**Frame/Trace Analyzer:**
+- Go to **View → Frame Analyzer...** to open the analyzer
+- View all Modbus communication frames in a table with:
+  - Timestamp, direction (TX/RX), slave ID, function code, address range, result, response time
+- Click on a frame to see detailed information:
+  - Raw hex data, decoded info, error descriptions
+- **Statistics tab:** View aggregated statistics (total requests, timeouts per slave, average response times)
+- **Diagnostics tab:** See automatic findings (e.g., "Many timeouts on Slave 3 - check cable/ID/baudrate")
+- Use filters to focus on specific issues (errors only, specific slave ID, function code, etc.)
+
+**Snapshots & Compare:**
+- Go to **Snapshots → Take Snapshot...** to capture current state
+- Choose scope: Current session or all sessions
+- Add a name and optional note for the snapshot
+- Go to **Snapshots → Manage Snapshots...** to:
+  - View all snapshots with details
+  - Compare two snapshots (select 2 snapshots with Ctrl+click, then click "Compare...")
+  - Export snapshots or comparisons to CSV
+  - Delete snapshots
+- **Compare view:** See side-by-side comparison with:
+  - Changed values highlighted
+  - Numeric differences and percentages
+  - Filter to show only changed values
+  - Export diff to CSV for documentation
 
 **User Interface:**
 - Dark theme for reduced eye strain
@@ -265,6 +312,38 @@ Simulatoren har følgende testdata:
 - Definer brugerdefinerede tags med navne, datatyper, byte order, skalering og enheder
 - Understøtter: UINT16, INT16, UINT32, INT32 (DINT), FLOAT32, BOOL
 - Tags skal matche sessionens function code (address_type)
+
+**Device Templates & Tag-bibliotek:**
+- Gå til **Session → Device Templates...** for at administrere template-biblioteket
+- **Gem tags som template:** I tag management dialog, klik "Save tags as template..." for at oprette en genbrugelig template
+- **Indlæs fra template:** I tag management dialog, klik "Load from template..." for hurtigt at anvende standard tag-sæt
+- **Import/Eksport:** Importer CSV/Excel filer med registeroversigter eller eksporter templates til brug i andre systemer
+- Templates er perfekte til standardudstyr (VAV-bokse, pumper, VFD, ventilationsaggregater, osv.)
+
+**Frame/Trace Analyzer:**
+- Gå til **Vis → Frame Analyzer...** for at åbne analyseren
+- Se alle Modbus kommunikationsframes i en tabel med:
+  - Tidsstempel, retning (TX/RX), slave ID, function code, adresseområde, resultat, responstid
+- Klik på en frame for at se detaljerede informationer:
+  - Rå hex data, dekodet info, fejlbeskrivelser
+- **Statistics fanen:** Se aggregerede statistikker (total requests, timeouts per slave, gennemsnitlig responstid)
+- **Diagnostics fanen:** Se automatiske findings (f.eks. "Mange timeouts på Slave 3 - tjek kabel/ID/baudrate")
+- Brug filtre til at fokusere på specifikke problemer (kun fejl, specifik slave ID, function code, osv.)
+
+**Snapshots & Compare:**
+- Gå til **Snapshots → Take Snapshot...** for at fange nuværende tilstand
+- Vælg scope: Aktuel session eller alle sessions
+- Tilføj et navn og valgfri note til snapshot
+- Gå til **Snapshots → Manage Snapshots...** for at:
+  - Se alle snapshots med detaljer
+  - Sammenligne to snapshots (vælg 2 snapshots med Ctrl+klik, klik derefter "Compare...")
+  - Eksportere snapshots eller sammenligninger til CSV
+  - Slette snapshots
+- **Compare view:** Se side-om-side sammenligning med:
+  - Ændrede værdier fremhævet
+  - Numeriske forskelle og procenter
+  - Filter for kun at vise ændrede værdier
+  - Eksport diff til CSV til dokumentation
 
 **Brugergrænseflade:**
 - Mørkt tema for mindre anstrengelse

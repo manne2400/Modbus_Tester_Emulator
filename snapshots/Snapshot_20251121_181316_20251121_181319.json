@@ -1,0 +1,278 @@
+{
+  "id": "928923fe-b28b-40c8-b3d8-7d7a6e381e44",
+  "name": "Snapshot_20251121_181316",
+  "timestamp": "2025-11-21T18:13:19.222622",
+  "note": null,
+  "sessions": [
+    {
+      "session_id": "Session 1",
+      "session_name": "Session 1",
+      "connection_name": "127.0.0.1",
+      "slave_id": 1,
+      "function_code": 4,
+      "values": [
+        {
+          "address": 20,
+          "tag_id": null,
+          "tag_name": "Input 20 int32 be",
+          "raw_value": 50000,
+          "scaled_value": 50000.0,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 22,
+          "tag_id": null,
+          "tag_name": "Input 22 int32 be",
+          "raw_value": -25000,
+          "scaled_value": -25000.0,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 24,
+          "tag_id": null,
+          "tag_name": "Input 24 int32 be",
+          "raw_value": 100000,
+          "scaled_value": 100000.0,
+          "status": "OK",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "session_id": "Session 2",
+      "session_name": "Session 2",
+      "connection_name": "127.0.0.1",
+      "slave_id": 1,
+      "function_code": 3,
+      "values": [
+        {
+          "address": 20,
+          "tag_id": null,
+          "tag_name": "Holding 20 int32 be",
+          "raw_value": 1000000,
+          "scaled_value": 1000000.0,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 22,
+          "tag_id": null,
+          "tag_name": "Holding 22 int32 be",
+          "raw_value": -500000,
+          "scaled_value": -500000.0,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 24,
+          "tag_id": null,
+          "tag_name": "Holding 24 int32 be",
+          "raw_value": 2147483647,
+          "scaled_value": 2147483647.0,
+          "status": "OK",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "session_id": "Session 3",
+      "session_name": "Session 3",
+      "connection_name": "127.0.0.1",
+      "slave_id": 1,
+      "function_code": 3,
+      "values": [
+        {
+          "address": 0,
+          "tag_id": null,
+          "tag_name": "Address 0",
+          "raw_value": 100,
+          "scaled_value": 100,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 1,
+          "tag_id": null,
+          "tag_name": "Address 1",
+          "raw_value": 200,
+          "scaled_value": 200,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 2,
+          "tag_id": null,
+          "tag_name": "Address 2",
+          "raw_value": 300,
+          "scaled_value": 300,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 3,
+          "tag_id": null,
+          "tag_name": "Address 3",
+          "raw_value": 400,
+          "scaled_value": 400,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 4,
+          "tag_id": null,
+          "tag_name": "Address 4",
+          "raw_value": 500,
+          "scaled_value": 500,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 5,
+          "tag_id": null,
+          "tag_name": "Address 5",
+          "raw_value": 600,
+          "scaled_value": 600,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 6,
+          "tag_id": null,
+          "tag_name": "Address 6",
+          "raw_value": 700,
+          "scaled_value": 700,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 7,
+          "tag_id": null,
+          "tag_name": "Address 7",
+          "raw_value": 800,
+          "scaled_value": 800,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 8,
+          "tag_id": null,
+          "tag_name": "Address 8",
+          "raw_value": 900,
+          "scaled_value": 900,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 9,
+          "tag_id": null,
+          "tag_name": "Address 9",
+          "raw_value": 1000,
+          "scaled_value": 1000,
+          "status": "OK",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "session_id": "Session 4",
+      "session_name": "Session 4",
+      "connection_name": "COM11",
+      "slave_id": 1,
+      "function_code": 3,
+      "values": [
+        {
+          "address": 0,
+          "tag_id": null,
+          "tag_name": "Address 0",
+          "raw_value": 100,
+          "scaled_value": 100,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 1,
+          "tag_id": null,
+          "tag_name": "Address 1",
+          "raw_value": 200,
+          "scaled_value": 200,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 2,
+          "tag_id": null,
+          "tag_name": "Address 2",
+          "raw_value": 300,
+          "scaled_value": 300,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 3,
+          "tag_id": null,
+          "tag_name": "Address 3",
+          "raw_value": 400,
+          "scaled_value": 400,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 4,
+          "tag_id": null,
+          "tag_name": "Address 4",
+          "raw_value": 500,
+          "scaled_value": 500,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 5,
+          "tag_id": null,
+          "tag_name": "Address 5",
+          "raw_value": 600,
+          "scaled_value": 600,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 6,
+          "tag_id": null,
+          "tag_name": "Address 6",
+          "raw_value": 700,
+          "scaled_value": 700,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 7,
+          "tag_id": null,
+          "tag_name": "Address 7",
+          "raw_value": 800,
+          "scaled_value": 800,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 8,
+          "tag_id": null,
+          "tag_name": "Address 8",
+          "raw_value": 900,
+          "scaled_value": 900,
+          "status": "OK",
+          "unit": ""
+        },
+        {
+          "address": 9,
+          "tag_id": null,
+          "tag_name": "Address 9",
+          "raw_value": 950,
+          "scaled_value": 950,
+          "status": "OK",
+          "unit": ""
+        }
+      ]
+    }
+  ]
+}

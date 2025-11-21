@@ -174,6 +174,17 @@ class HelpDialog(QDialog):
             <li><b>Important:</b> Tags with incorrect address_type will be ignored. Make sure address_type matches function code!</li>
         </ul>
         
+        <h3>5a. Device Templates & Tag Library (optional)</h3>
+        <p>For BMS/CTS work, you can reuse tag sets for standard equipment:</p>
+        <ul>
+            <li>Go to <b>Session → Device Templates...</b> to manage your template library</li>
+            <li><b>Save tags as template:</b> In tag management dialog, click "Save tags as template..." to create a reusable template from current session tags</li>
+            <li><b>Load from template:</b> In tag management dialog, click "Load from template..." to quickly apply a standard tag set to your session</li>
+            <li><b>Import from CSV/Excel:</b> Import register overviews from suppliers (e.g., Excel files with register addresses and descriptions)</li>
+            <li><b>Export to CSV/Excel:</b> Export templates or session tags for use in other systems or BMS projects</li>
+            <li>Templates are perfect for standard equipment like VAV boxes, pumps, VFDs, ventilation units, etc.</li>
+        </ul>
+        
         <h3>6. Start polling</h3>
         <p>Click the <b>"Start"</b> button in the session tab to begin reading data.</p>
         <p>Data will be displayed in the table below with:</p>
@@ -187,7 +198,58 @@ class HelpDialog(QDialog):
             <li><b>Status:</b> OK, Timeout, Error, etc.</li>
         </ul>
         
-        <h3>7. Multi-view (optional)</h3>
+        <h3>7. Frame Analyzer (optional - for diagnostics)</h3>
+        <p>To analyze Modbus communication and diagnose issues:</p>
+        <ul>
+            <li>Go to <b>View → Frame Analyzer...</b></li>
+            <li>The analyzer shows all TX/RX frames in a table with timestamps, direction, slave ID, function codes, and results</li>
+            <li>Click on a frame to see detailed information (raw hex, decoded info, error descriptions)</li>
+            <li><b>Statistics tab:</b> View aggregated statistics:
+                <ul>
+                    <li>Total requests/responses, timeouts per slave, CRC errors, average response times</li>
+                </ul>
+            </li>
+            <li><b>Diagnostics tab:</b> See automatic findings:
+                <ul>
+                    <li>Many timeouts on a slave (check cable/ID/baudrate)</li>
+                    <li>ID conflicts (multiple devices responding to same ID)</li>
+                    <li>Consistent exceptions (wrong function code or unsupported function)</li>
+                </ul>
+            </li>
+            <li>Use filters to focus on specific issues (errors only, specific slave ID, function code, etc.)</li>
+            <li>This helps answer: "What's actually happening on the bus?" and "Why is it failing?"</li>
+        </ul>
+        
+        <h3>8. Snapshots & Compare (optional - for documentation)</h3>
+        <p>To capture and compare installation states:</p>
+        <ul>
+            <li><b>Take Snapshot:</b> Go to <b>Snapshots → Take Snapshot...</b>
+                <ul>
+                    <li>Choose scope: Current session or all sessions</li>
+                    <li>Add a name and optional note (e.g., "Before parameter change")</li>
+                    <li>Snapshots capture all current values from active sessions</li>
+                </ul>
+            </li>
+            <li><b>Manage Snapshots:</b> Go to <b>Snapshots → Manage Snapshots...</b>
+                <ul>
+                    <li>View all snapshots with details (timestamp, scope, number of values)</li>
+                    <li>Select 2 snapshots (hold Ctrl and click) and click "Compare..." to see differences</li>
+                    <li>Export snapshots or comparisons to CSV for documentation</li>
+                    <li>Delete old snapshots</li>
+                </ul>
+            </li>
+            <li><b>Compare View:</b> When comparing two snapshots:
+                <ul>
+                    <li>See side-by-side comparison with changed values highlighted</li>
+                    <li>View numeric differences and percentages</li>
+                    <li>Filter to show only changed values</li>
+                    <li>Export diff to CSV</li>
+                </ul>
+            </li>
+            <li>Perfect for: "It worked yesterday - what's different now?" or documenting parameter changes</li>
+        </ul>
+        
+        <h3>9. Multi-view (optional)</h3>
         <p>To see multiple sessions simultaneously side by side:</p>
         <ul>
             <li>Go to <b>View → Manage Multi-view...</b></li>
@@ -379,6 +441,39 @@ class HelpDialog(QDialog):
         <h3>Log viewer</h3>
         <p>Use <b>View → Show Log</b> to see detailed TX/RX messages with hexdump.</p>
         <p>This helps diagnose protocol problems.</p>
+        
+        <h3>Frame Analyzer</h3>
+        <p><b>No data in Frame Analyzer:</b></p>
+        <ul>
+            <li>Make sure sessions are running and polling data</li>
+            <li>Click "Refresh" button to update the view</li>
+            <li>Check that trace callback is properly set (should work automatically)</li>
+            <li>For TCP: Response times should be visible - if not, check that connections are properly initialized</li>
+        </ul>
+        
+        <h3>Device Templates</h3>
+        <p><b>Cannot import CSV/Excel:</b></p>
+        <ul>
+            <li>Check that the file format matches expected columns (Address, Name, Data Type, etc.)</li>
+            <li>Use the mapping dialog to correctly map your file columns to application fields</li>
+            <li>Ensure addresses are numeric values</li>
+            <li>Data types must match supported types (UINT16, INT16, INT32, UINT32, FLOAT32, BOOL)</li>
+        </ul>
+        
+        <h3>Snapshots</h3>
+        <p><b>Snapshot only contains one session when "All Sessions" was selected:</b></p>
+        <ul>
+            <li>Only sessions with poll data are included in snapshots</li>
+            <li>Make sure all sessions you want to include are running and have received data at least once</li>
+            <li>Check the snapshot details to see which sessions were included</li>
+            <li>You'll get a warning message if some sessions were skipped</li>
+        </ul>
+        <p><b>Cannot compare snapshots:</b></p>
+        <ul>
+            <li>Make sure you select exactly 2 snapshots (hold Ctrl and click on two rows)</li>
+            <li>The table now supports multiple selection - use Ctrl+click for individual selection or Shift+click for range</li>
+            <li>If more than 2 snapshots are selected, the first 2 will be used</li>
+        </ul>
         """)
         tabs.addTab(troubleshooting, "Troubleshooting")
         
@@ -422,6 +517,34 @@ class HelpDialog(QDialog):
             <li>The HEX column shows hexadecimal representation of the value</li>
             <li>Scaling allows converting raw values to physical units (e.g. temperature)</li>
             <li><b>Important:</b> Tag's address_type MUST match session's function code, otherwise the tag is ignored</li>
+        </ul>
+        
+        <h3>Device Templates</h3>
+        <ul>
+            <li>Save frequently used tag sets as templates for reuse</li>
+            <li>Perfect for standard equipment (VAV boxes, pumps, VFDs, etc.)</li>
+            <li>Import register overviews from suppliers (CSV/Excel)</li>
+            <li>Export templates for use in other systems or BMS projects</li>
+            <li>Quickly apply standard tag sets to new sessions</li>
+        </ul>
+        
+        <h3>Frame Analyzer</h3>
+        <ul>
+            <li>Use <b>View → Frame Analyzer...</b> to analyze all Modbus communication</li>
+            <li>See every TX/RX frame with timestamps, response times, and results</li>
+            <li>View statistics (timeouts per slave, average response times, error counts)</li>
+            <li>Get automatic diagnostics (ID conflicts, timeout patterns, exception analysis)</li>
+            <li>Filter by direction, status, slave ID, or function code</li>
+            <li>Helps diagnose: "Is the problem in my app, the BMS, or the field equipment?"</li>
+        </ul>
+        
+        <h3>Snapshots</h3>
+        <ul>
+            <li>Capture installation state at any point in time</li>
+            <li>Take snapshots of single session or all sessions</li>
+            <li>Compare two snapshots to see what changed</li>
+            <li>Export comparisons to CSV for documentation</li>
+            <li>Perfect for: "What changed after the update?" or "How did it look before we started?"</li>
         </ul>
         
         <h3>Writing</h3>

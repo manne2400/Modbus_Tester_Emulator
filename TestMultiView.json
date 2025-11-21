@@ -153,6 +153,17 @@
       "poll_interval_ms": 1000,
       "tags": [],
       "status": "Stopped"
+    },
+    {
+      "name": "Session 4",
+      "connection_profile_name": "COM11",
+      "slave_id": 1,
+      "function_code": 3,
+      "start_address": 0,
+      "quantity": 10,
+      "poll_interval_ms": 1000,
+      "tags": [],
+      "status": "Stopped"
     }
   ],
   "multi_view": {

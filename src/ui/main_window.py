@@ -17,12 +17,18 @@ from src.ui.help_dialog import HelpDialog
 from src.ui.multi_view_dialog import MultiViewDialog
 from src.ui.simulator_dialog import SimulatorDialog
 from src.ui.device_scanner_dialog import DeviceScannerDialog
+from src.ui.frame_analyzer_dialog import FrameAnalyzerDialog
+from src.ui.template_manager_dialog import TemplateManagerDialog
+from src.storage.template_library import TemplateLibrary
+from src.application.snapshot_manager import SnapshotManager
+from src.storage.snapshot_store import SnapshotStore
 from src.ui.styles.theme import Theme
 from src.application.simulator_manager import SimulatorManager
 from src.storage.config_manager import ConfigManager
 from src.storage.project_manager import ProjectManager
 from src.application.session_manager import SessionManager
 from src.application.polling_engine import PollingEngine
+from src.application.trace_store import TraceStore
 from src.models.connection_profile import ConnectionProfile, ConnectionType
 from src.models.session_definition import SessionDefinition
 from src.protocol.function_codes import FunctionCode
@@ -51,6 +57,10 @@ class MainWindow(QMainWindow):
         self.session_manager = SessionManager()
         self.polling_engine = PollingEngine(self.session_manager)
         self.simulator_manager = SimulatorManager()
+        self.trace_store = TraceStore()
+        self.template_library = TemplateLibrary()
+        self.snapshot_store = SnapshotStore()
+        self.snapshot_manager = SnapshotManager(self.session_manager)
         
         # Connect polling engine signals
         self.polling_engine.poll_result.connect(self._on_poll_result)
@@ -59,6 +69,9 @@ class MainWindow(QMainWindow):
         # Set log callback
         self.log_viewer = None
         self.session_manager.set_log_callback(self._on_log_entry)
+        
+        # Set trace callback
+        self.session_manager.set_trace_callback(self._on_trace_entry)
         
         # UI components
         self.connection_tree = None
@@ -184,6 +197,12 @@ class MainWindow(QMainWindow):
         stop_all_action.triggered.connect(self._stop_all_sessions)
         session_menu.addAction(stop_all_action)
         
+        session_menu.addSeparator()
+        
+        device_templates_action = QAction("Device Templates...", self)
+        device_templates_action.triggered.connect(self._show_device_templates)
+        session_menu.addAction(device_templates_action)
+        
         # View menu
         view_menu = menubar.addMenu("View")
         
@@ -207,6 +226,12 @@ class MainWindow(QMainWindow):
         
         view_menu.addSeparator()
         
+        frame_analyzer_action = QAction("Frame Analyzer...", self)
+        frame_analyzer_action.triggered.connect(self._show_frame_analyzer)
+        view_menu.addAction(frame_analyzer_action)
+        
+        view_menu.addSeparator()
+        
         simulator_action = QAction("Modbus Simulator...", self)
         simulator_action.triggered.connect(self._show_simulator_dialog)
         view_menu.addAction(simulator_action)
@@ -223,6 +248,17 @@ class MainWindow(QMainWindow):
         about_action = QAction("About Modbus Tester", self)
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
+        
+        # Snapshots menu
+        snapshots_menu = menubar.addMenu("Snapshots")
+        
+        take_snapshot_action = QAction("Take Snapshot...", self)
+        take_snapshot_action.triggered.connect(self._take_snapshot)
+        snapshots_menu.addAction(take_snapshot_action)
+        
+        manage_snapshots_action = QAction("Manage Snapshots...", self)
+        manage_snapshots_action.triggered.connect(self._manage_snapshots)
+        snapshots_menu.addAction(manage_snapshots_action)
     
     def _create_toolbar(self):
         """Create toolbar"""
@@ -488,7 +524,7 @@ class MainWindow(QMainWindow):
     
     def _create_session_tab(self, session: SessionDefinition):
         """Create a session tab"""
-        tab = SessionTab(session, self.connections, self.session_manager, self.polling_engine, self.config_manager)
+        tab = SessionTab(session, self.connections, self.session_manager, self.polling_engine, self.config_manager, self.template_library)
         # Connect signal to update tree when connection changes
         tab.connection_changed.connect(self._on_session_connection_changed)
         # Add to container
@@ -613,10 +649,18 @@ class MainWindow(QMainWindow):
         if self.log_viewer:
             self.log_viewer.add_entry(entry)
     
+    def _on_trace_entry(self, entry):
+        """Handle trace entry from transport"""
+        self.trace_store.add_entry(entry)
+    
     def _on_poll_result(self, session_id: str, result):
         """Handle poll result"""
         if session_id in self.session_tab_widgets:
             self.session_tab_widgets[session_id].update_data(result)
+        
+        # Register poll result for snapshot manager
+        if hasattr(self, 'snapshot_manager'):
+            self.snapshot_manager.register_poll_result(session_id, result)
     
     def _on_session_error(self, session_id: str, error_message: str):
         """Handle session error"""
@@ -760,9 +804,58 @@ class MainWindow(QMainWindow):
                 if tab_widget:
                     tab_widget.tabCloseRequested.connect(self._close_session_tab)
     
+    def _show_frame_analyzer(self):
+        """Show frame analyzer dialog"""
+        dialog = FrameAnalyzerDialog(self, self.trace_store)
+        dialog.exec()
+    
     def _show_simulator_dialog(self):
         """Show simulator configuration dialog"""
         dialog = SimulatorDialog(self, self.simulator_manager)
+        dialog.exec()
+    
+    def _take_snapshot(self):
+        """Take snapshot"""
+        from src.ui.snapshot_dialog import SnapshotDialog
+        
+        # Get current session if any tab is selected
+        current_session = None
+        if self.session_container.single_view.currentWidget():
+            current_tab = self.session_container.single_view.currentWidget()
+            if isinstance(current_tab, SessionTab):
+                current_session = current_tab.session
+        
+        all_sessions = list(self.sessions.values())
+        
+        dialog = SnapshotDialog(
+            self,
+            self.snapshot_manager,
+            current_session,
+            all_sessions
+        )
+        
+        if dialog.exec():
+            snapshot = dialog.get_snapshot()
+            if snapshot:
+                if self.snapshot_store.save_snapshot(snapshot):
+                    QMessageBox.information(
+                        self,
+                        "Success",
+                        f"Snapshot '{snapshot.name}' gemt."
+                    )
+                else:
+                    QMessageBox.warning(self, "Error", "Kunne ikke gemme snapshot.")
+    
+    def _manage_snapshots(self):
+        """Manage snapshots"""
+        from src.ui.snapshot_manager_dialog import SnapshotManagerDialog
+        
+        dialog = SnapshotManagerDialog(self, self.snapshot_store)
+        dialog.exec()
+    
+    def _show_device_templates(self):
+        """Show device templates manager dialog"""
+        dialog = TemplateManagerDialog(self, self.template_library)
         dialog.exec()
     
     def _show_device_scanner(self):

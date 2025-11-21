@@ -15,8 +15,10 @@ from src.ui.data_table import DataTable
 from src.ui.widgets.status_bar import StatusBar
 from src.ui.tag_dialog import TagDialog
 from src.models.tag_definition import TagDefinition, AddressType
+from src.storage.template_library import TemplateLibrary
+from src.models.device_template import DeviceTemplate
 from src.ui.styles.theme import Theme
-from typing import List
+from typing import List, Optional
 
 
 class SessionTab(QWidget):
@@ -31,7 +33,8 @@ class SessionTab(QWidget):
         connections: List[ConnectionProfile],
         session_manager: SessionManager,
         polling_engine: PollingEngine,
-        config_manager=None
+        config_manager=None,
+        template_library: Optional[TemplateLibrary] = None
     ):
         """Initialize session tab"""
         super().__init__()
@@ -40,6 +43,7 @@ class SessionTab(QWidget):
         self.session_manager = session_manager
         self.polling_engine = polling_engine
         self.config_manager = config_manager
+        self.template_library = template_library or TemplateLibrary()
         
         self._setup_ui()
         self.update_status()
@@ -255,6 +259,17 @@ class SessionTab(QWidget):
         
         buttons_layout.addStretch()
         
+        # Template buttons
+        load_template_btn = QPushButton("Load from Template...")
+        load_template_btn.clicked.connect(lambda: self._load_from_template(dialog, tags_list))
+        buttons_layout.addWidget(load_template_btn)
+        
+        save_template_btn = QPushButton("Save as Template...")
+        save_template_btn.clicked.connect(lambda: self._save_as_template(dialog, tags_list))
+        buttons_layout.addWidget(save_template_btn)
+        
+        buttons_layout.addStretch()
+        
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(dialog.accept)
         buttons_layout.addWidget(close_btn)
@@ -338,6 +353,124 @@ class SessionTab(QWidget):
             if self.config_manager:
                 self.config_manager.save_sessions([self.session])
             tags_list.takeItem(tags_list.row(current_item))
+    
+    def _load_from_template(self, parent_dialog, tags_list):
+        """Load tags from template"""
+        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QPushButton, QLabel
+        
+        # Show template selection dialog
+        select_dialog = QDialog(parent_dialog)
+        select_dialog.setWindowTitle("Load from Template")
+        select_dialog.setModal(True)
+        select_dialog.setMinimumSize(500, 400)
+        
+        layout = QVBoxLayout(select_dialog)
+        
+        layout.addWidget(QLabel("Vælg template:"))
+        
+        template_list = QListWidget()
+        templates = self.template_library.load_all_templates()
+        for template in templates:
+            item_text = f"{template.get_display_name()} ({template.get_tag_count()} tags)"
+            item = QListWidgetItem(item_text)
+            item.setData(Qt.ItemDataRole.UserRole, template)
+            template_list.addItem(item)
+        
+        layout.addWidget(template_list)
+        
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
+        
+        load_btn = QPushButton("Load Selected Tags")
+        load_btn.clicked.connect(select_dialog.accept)
+        buttons_layout.addWidget(load_btn)
+        
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(select_dialog.reject)
+        buttons_layout.addWidget(cancel_btn)
+        
+        layout.addLayout(buttons_layout)
+        
+        if select_dialog.exec():
+            current_item = template_list.currentItem()
+            if not current_item:
+                QMessageBox.warning(parent_dialog, "Ingen template valgt", "Vælg en template.")
+                return
+            
+            template = current_item.data(Qt.ItemDataRole.UserRole)
+            if not isinstance(template, DeviceTemplate):
+                return
+            
+            # Determine address type from session function code
+            address_type_map = {
+                FunctionCode.READ_COILS: AddressType.COIL,
+                FunctionCode.READ_DISCRETE_INPUTS: AddressType.DISCRETE_INPUT,
+                FunctionCode.READ_HOLDING_REGISTERS: AddressType.HOLDING_REGISTER,
+                FunctionCode.READ_INPUT_REGISTERS: AddressType.INPUT_REGISTER,
+            }
+            session_address_type = address_type_map.get(
+                FunctionCode(self.session.function_code),
+                AddressType.HOLDING_REGISTER
+            )
+            
+            # Filter tags that match session address type
+            matching_tags = [tag for tag in template.tags if tag.address_type == session_address_type]
+            
+            if not matching_tags:
+                QMessageBox.warning(
+                    parent_dialog,
+                    "Ingen matchende tags",
+                    f"Template '{template.name}' har ingen tags af typen {session_address_type.value}."
+                )
+                return
+            
+            # Add tags to session
+            for tag in matching_tags:
+                # Check if tag with same address already exists
+                if not any(t.address == tag.address and t.address_type == tag.address_type for t in self.session.tags):
+                    self.session.tags.append(tag)
+                    # Add to list
+                    item_text = f"{tag.name} - Addr: {tag.address}, Type: {tag.data_type.value}"
+                    item = QListWidgetItem(item_text)
+                    item.setData(Qt.ItemDataRole.UserRole, tag)
+                    tags_list.addItem(item)
+            
+            self.session_manager.add_session(self.session)
+            if self.config_manager:
+                self.config_manager.save_sessions([self.session])
+            
+            QMessageBox.information(
+                parent_dialog,
+                "Tags loaded",
+                f"{len(matching_tags)} tags loaded fra template '{template.name}'."
+            )
+    
+    def _save_as_template(self, parent_dialog, tags_list):
+        """Save current tags as template"""
+        if not self.session.tags:
+            QMessageBox.warning(parent_dialog, "Ingen tags", "Der er ingen tags at gemme som template.")
+            return
+        
+        from src.ui.template_edit_dialog import TemplateEditDialog
+        
+        # Create template from current tags
+        template = DeviceTemplate(
+            name=f"{self.session.name}_Template",
+            tags=self.session.tags.copy()
+        )
+        
+        dialog = TemplateEditDialog(parent_dialog, template)
+        if dialog.exec():
+            template = dialog.get_template()
+            if template:
+                if self.template_library.save_template(template):
+                    QMessageBox.information(
+                        parent_dialog,
+                        "Success",
+                        f"Template '{template.name}' gemt med {len(template.tags)} tags."
+                    )
+                else:
+                    QMessageBox.warning(parent_dialog, "Error", "Kunne ikke gemme template.")
     
     def _toggle_polling(self):
         """Toggle polling on/off"""

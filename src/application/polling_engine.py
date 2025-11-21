@@ -116,7 +116,8 @@ class PollingEngine(QObject):
                 session.function_code,
                 session.slave_id,
                 session.start_address,
-                required_quantity
+                required_quantity,
+                session_id=session.name
             )
             
             response_time = (time.time() - start_time) * 1000

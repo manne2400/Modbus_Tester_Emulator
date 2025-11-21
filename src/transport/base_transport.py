@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Callable
 from src.models.connection_profile import ConnectionProfile
 from src.models.log_entry import LogEntry
+from src.models.trace_entry import TraceEntry, TraceDirection, TraceStatus
 
 
 class BaseTransport(ABC):
@@ -13,15 +14,25 @@ class BaseTransport(ABC):
         self.profile = profile
         self.is_connected = False
         self.log_callback: Optional[Callable[[LogEntry], None]] = None
+        self.trace_callback: Optional[Callable[[TraceEntry], None]] = None
     
     def set_log_callback(self, callback: Callable[[LogEntry], None]):
         """Set callback for logging"""
         self.log_callback = callback
     
+    def set_trace_callback(self, callback: Callable[[TraceEntry], None]):
+        """Set callback for trace entries"""
+        self.trace_callback = callback
+    
     def _log(self, entry: LogEntry):
         """Internal logging helper"""
         if self.log_callback:
             self.log_callback(entry)
+    
+    def _trace(self, entry: TraceEntry):
+        """Internal trace helper"""
+        if self.trace_callback:
+            self.trace_callback(entry)
     
     @abstractmethod
     def connect(self) -> bool:

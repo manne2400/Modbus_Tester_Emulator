@@ -19,7 +19,8 @@ class ModbusProtocol:
         function_code: int,
         slave_id: int,
         start_address: int,
-        quantity: int
+        quantity: int,
+        session_id: Optional[str] = None
     ) -> tuple[Optional[Union[list[bool], list[int]]], Optional[str]]:
         """Execute read operation"""
         if not is_read_function(function_code):
@@ -27,13 +28,13 @@ class ModbusProtocol:
         
         try:
             if function_code == FunctionCode.READ_COILS:
-                return self.transport.read_coils(slave_id, start_address, quantity)
+                return self.transport.read_coils(slave_id, start_address, quantity, session_id)
             elif function_code == FunctionCode.READ_DISCRETE_INPUTS:
-                return self.transport.read_discrete_inputs(slave_id, start_address, quantity)
+                return self.transport.read_discrete_inputs(slave_id, start_address, quantity, session_id)
             elif function_code == FunctionCode.READ_HOLDING_REGISTERS:
-                return self.transport.read_holding_registers(slave_id, start_address, quantity)
+                return self.transport.read_holding_registers(slave_id, start_address, quantity, session_id)
             elif function_code == FunctionCode.READ_INPUT_REGISTERS:
-                return self.transport.read_input_registers(slave_id, start_address, quantity)
+                return self.transport.read_input_registers(slave_id, start_address, quantity, session_id)
             else:
                 return None, f"Unsupported read function code: {function_code}"
         except Exception as e:
