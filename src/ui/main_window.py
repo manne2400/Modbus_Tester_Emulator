@@ -203,6 +203,17 @@ class MainWindow(QMainWindow):
         device_templates_action.triggered.connect(self._show_device_templates)
         session_menu.addAction(device_templates_action)
         
+        # Advanced menu
+        advanced_menu = menubar.addMenu("Advanced")
+        
+        frame_analyzer_action = QAction("Frame Analyzer...", self)
+        frame_analyzer_action.triggered.connect(self._show_frame_analyzer)
+        advanced_menu.addAction(frame_analyzer_action)
+        
+        simulator_action = QAction("Modbus Simulator...", self)
+        simulator_action.triggered.connect(self._show_simulator_dialog)
+        advanced_menu.addAction(simulator_action)
+        
         # View menu
         view_menu = menubar.addMenu("View")
         
@@ -223,18 +234,17 @@ class MainWindow(QMainWindow):
         manage_multi_view_action = QAction("Manage Multi-view...", self)
         manage_multi_view_action.triggered.connect(self._manage_multi_view)
         view_menu.addAction(manage_multi_view_action)
+
+                # Snapshots menu
+        snapshots_menu = menubar.addMenu("Snapshots")
         
-        view_menu.addSeparator()
+        take_snapshot_action = QAction("Take Snapshot...", self)
+        take_snapshot_action.triggered.connect(self._take_snapshot)
+        snapshots_menu.addAction(take_snapshot_action)
         
-        frame_analyzer_action = QAction("Frame Analyzer...", self)
-        frame_analyzer_action.triggered.connect(self._show_frame_analyzer)
-        view_menu.addAction(frame_analyzer_action)
-        
-        view_menu.addSeparator()
-        
-        simulator_action = QAction("Modbus Simulator...", self)
-        simulator_action.triggered.connect(self._show_simulator_dialog)
-        view_menu.addAction(simulator_action)
+        manage_snapshots_action = QAction("Manage Snapshots...", self)
+        manage_snapshots_action.triggered.connect(self._manage_snapshots)
+        snapshots_menu.addAction(manage_snapshots_action)
         
         # Help menu
         help_menu = menubar.addMenu("Help")
@@ -249,16 +259,6 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
         
-        # Snapshots menu
-        snapshots_menu = menubar.addMenu("Snapshots")
-        
-        take_snapshot_action = QAction("Take Snapshot...", self)
-        take_snapshot_action.triggered.connect(self._take_snapshot)
-        snapshots_menu.addAction(take_snapshot_action)
-        
-        manage_snapshots_action = QAction("Manage Snapshots...", self)
-        manage_snapshots_action.triggered.connect(self._manage_snapshots)
-        snapshots_menu.addAction(manage_snapshots_action)
     
     def _create_toolbar(self):
         """Create toolbar"""

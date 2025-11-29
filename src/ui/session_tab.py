@@ -497,10 +497,10 @@ class SessionTab(QWidget):
                     QMessageBox.information(
                         parent_dialog,
                         "Success",
-                        f"Template '{template.name}' gemt med {len(template.tags)} tags."
+                        f"Template '{template.name}' saved with {len(template.tags)} tags."
                     )
                 else:
-                    QMessageBox.warning(parent_dialog, "Error", "Kunne ikke gemme template.")
+                    QMessageBox.warning(parent_dialog, "Error", "Could not save template.")
     
     def _toggle_polling(self):
         """Toggle polling on/off"""
@@ -511,7 +511,7 @@ class SessionTab(QWidget):
         else:
             # Ensure connection is established
             if not self.session_manager.connect(self.session.connection_profile_name):
-                self.status_bar.update_status("Kunne ikke forbinde", error=True)
+                self.status_bar.update_status("Could not connect", error=True)
                 return
             self.session_manager.start_session(self.session.name)
             self.start_stop_btn.setText("Stop")
