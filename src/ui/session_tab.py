@@ -527,7 +527,7 @@ class SessionTab(QWidget):
     def update_status(self):
         """Update status display"""
         if self.session.status == SessionStatus.RUNNING:
-            self.status_bar.update_status("Kører...", error=False)
+            self.status_bar.update_status("Running...", error=False)
             self.start_stop_btn.setText("Stop")
             self.start_stop_btn.setProperty("status", "running")
         elif self.session.status == SessionStatus.ERROR:
@@ -535,7 +535,7 @@ class SessionTab(QWidget):
             self.start_stop_btn.setText("Start")
             self.start_stop_btn.setProperty("status", "")
         else:
-            self.status_bar.update_status("Stoppet", error=False)
+            self.status_bar.update_status("Stopped", error=False)
             self.start_stop_btn.setText("Start")
             self.start_stop_btn.setProperty("status", "")
             # Refresh style to apply property changes
