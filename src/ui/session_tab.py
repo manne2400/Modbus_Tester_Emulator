@@ -14,9 +14,11 @@ from src.protocol.function_codes import FunctionCode, FUNCTION_CODE_NAMES
 from src.ui.data_table import DataTable
 from src.ui.widgets.status_bar import StatusBar
 from src.ui.tag_dialog import TagDialog
+from src.ui.write_dialog import WriteDialog
 from src.models.tag_definition import TagDefinition, AddressType
 from src.storage.template_library import TemplateLibrary
 from src.models.device_template import DeviceTemplate
+from src.protocol.function_codes import is_write_function
 from src.ui.styles.theme import Theme
 from typing import List, Optional
 
@@ -80,16 +82,25 @@ class SessionTab(QWidget):
         self.slave_id_spin.valueChanged.connect(self._on_slave_id_changed)
         left_form.addRow("Slave ID:", self.slave_id_spin)
         
-        # Function code
+        # Function code (only read functions - write is done via "Skriv værdi" button)
         self.function_combo = QComboBox()
+        from src.protocol.function_codes import is_read_function
         for code in FunctionCode:
-            self.function_combo.addItem(
-                f"{code.value:02X} - {FUNCTION_CODE_NAMES[code]}",
-                code.value
-            )
+            # Only show read function codes (01-04)
+            if is_read_function(code.value):
+                self.function_combo.addItem(
+                    f"{code.value:02X} - {FUNCTION_CODE_NAMES[code]}",
+                    code.value
+                )
         index = self.function_combo.findData(self.session.function_code)
         if index >= 0:
             self.function_combo.setCurrentIndex(index)
+        else:
+            # If current function code is not a read function, default to Read Holding Registers
+            default_index = self.function_combo.findData(FunctionCode.READ_HOLDING_REGISTERS)
+            if default_index >= 0:
+                self.function_combo.setCurrentIndex(default_index)
+                self.session.function_code = FunctionCode.READ_HOLDING_REGISTERS
         self.function_combo.currentIndexChanged.connect(self._on_function_changed)
         left_form.addRow("Function Code:", self.function_combo)
         
@@ -166,9 +177,12 @@ class SessionTab(QWidget):
         controls_widget.setMaximumHeight(150)
         layout.addWidget(controls_widget)
         
-        # Tags button
+        # Tags and Write buttons
         tags_layout = QHBoxLayout()
         tags_layout.addStretch()
+        self.write_btn = QPushButton("Write Value...")
+        self.write_btn.clicked.connect(self._write_value)
+        tags_layout.addWidget(self.write_btn)
         self.tags_btn = QPushButton("Manage Tags...")
         self.tags_btn.clicked.connect(self._manage_tags)
         tags_layout.addWidget(self.tags_btn)
@@ -281,6 +295,14 @@ class SessionTab(QWidget):
     def _add_tag(self, parent_dialog, tags_list):
         """Add a new tag"""
         # Determine address type from function code
+        # Convert write function codes to read function codes for address type mapping
+        from src.protocol.function_codes import get_read_function_for_write, is_write_function
+        function_code_for_mapping = self.session.function_code
+        if is_write_function(self.session.function_code):
+            read_fc = get_read_function_for_write(self.session.function_code)
+            if read_fc:
+                function_code_for_mapping = read_fc
+        
         address_type_map = {
             FunctionCode.READ_COILS: AddressType.COIL,
             FunctionCode.READ_DISCRETE_INPUTS: AddressType.DISCRETE_INPUT,
@@ -288,7 +310,7 @@ class SessionTab(QWidget):
             FunctionCode.READ_INPUT_REGISTERS: AddressType.INPUT_REGISTER,
         }
         address_type = address_type_map.get(
-            FunctionCode(self.session.function_code),
+            FunctionCode(function_code_for_mapping),
             AddressType.HOLDING_REGISTER
         )
         
@@ -402,6 +424,14 @@ class SessionTab(QWidget):
                 return
             
             # Determine address type from session function code
+            # Convert write function codes to read function codes for address type mapping
+            from src.protocol.function_codes import get_read_function_for_write, is_write_function
+            function_code_for_mapping = self.session.function_code
+            if is_write_function(self.session.function_code):
+                read_fc = get_read_function_for_write(self.session.function_code)
+                if read_fc:
+                    function_code_for_mapping = read_fc
+            
             address_type_map = {
                 FunctionCode.READ_COILS: AddressType.COIL,
                 FunctionCode.READ_DISCRETE_INPUTS: AddressType.DISCRETE_INPUT,
@@ -409,7 +439,7 @@ class SessionTab(QWidget):
                 FunctionCode.READ_INPUT_REGISTERS: AddressType.INPUT_REGISTER,
             }
             session_address_type = address_type_map.get(
-                FunctionCode(self.session.function_code),
+                FunctionCode(function_code_for_mapping),
                 AddressType.HOLDING_REGISTER
             )
             
@@ -529,3 +559,56 @@ class SessionTab(QWidget):
     def show_error(self, error_message: str):
         """Show error message"""
         self.status_bar.update_status(error_message, error=True)
+    
+    def _write_value(self):
+        """Open write dialog and write value"""
+        # Ensure connection is established
+        if not self.session_manager.connect(self.session.connection_profile_name):
+            QMessageBox.warning(self, "No Connection", "Could not connect to device.")
+            return
+        
+        # Get protocol
+        protocol = self.session_manager.get_protocol(self.session.connection_profile_name)
+        if not protocol:
+            QMessageBox.warning(self, "Error", "Could not access protocol.")
+            return
+        
+        # Open write dialog
+        default_address = self.session.start_address
+        dialog = WriteDialog(self, self.session.function_code, default_address)
+        
+        if dialog.exec():
+            function_code, address, value, error = dialog.get_write_params()
+            if error:
+                QMessageBox.warning(self, "Fejl", error)
+                return
+            
+            # Execute write
+            try:
+                success, error_msg = protocol.execute_write(
+                    function_code,
+                    self.session.slave_id,
+                    address,
+                    value
+                )
+                
+                if success:
+                    QMessageBox.information(
+                        self,
+                        "Success",
+                        f"Value written to address {address}."
+                    )
+                    # Reset poll timer to refresh data immediately
+                    self.polling_engine.reset_poll_timer(self.session.name)
+                else:
+                    QMessageBox.warning(
+                        self,
+                        "Write Error",
+                        error_msg or "Could not write value."
+                    )
+            except Exception as e:
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"Unexpected error during write: {str(e)}"
+                )

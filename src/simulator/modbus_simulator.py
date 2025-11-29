@@ -110,6 +110,17 @@ def create_simulator_context():
     for i, val in enumerate(di_values):
         device.setValues(2, i, [val])  # Function 02, address i, value
     
+    # Dedicated write addresses for app testing
+    # Holding registers - writable addresses (40-49) - initialized to 0
+    # These can be written to using function code 06 (Write Single Register) or 16 (Write Multiple Registers)
+    for i in range(40, 50):
+        device.setValues(3, i, [0])  # Function 03, address i, value = 0
+    
+    # Coils - writable addresses (20-29) - initialized to False
+    # These can be written to using function code 05 (Write Single Coil) or 15 (Write Multiple Coils)
+    for i in range(20, 30):
+        device.setValues(1, i, [False])  # Function 01, address i, value = False
+    
     logger.info("Simulator data initialized")
     logger.info("Holding registers (0-9): 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000")
     logger.info("Input registers (0-9): 50, 150, 250, 350, 450, 550, 650, 750, 850, 950")
@@ -133,6 +144,10 @@ def create_simulator_context():
     logger.info("  Address 30-31: -999,999 (0xFFF0BDC1)")
     logger.info("")
     logger.info("Note: DINT values use 2 registers each. Use INT32 datatype with Big Endian byte order.")
+    logger.info("")
+    logger.info("Dedicated write addresses for app testing:")
+    logger.info("  Holding registers (40-49): Initialized to 0 - can be written with function code 06 or 16")
+    logger.info("  Coils (20-29): Initialized to False - can be written with function code 05 or 15")
     
     return context
 

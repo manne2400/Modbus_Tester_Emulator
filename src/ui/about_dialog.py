@@ -14,7 +14,7 @@ class AboutDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("About Modbus Tester")
         self.setModal(True)
-        self.setFixedSize(500, 400)
+        self.setFixedSize(500, 550)
         
         self._setup_ui()
         self._apply_dark_theme()
@@ -28,32 +28,44 @@ class AboutDialog(QDialog):
         # Title
         title = QLabel("Modbus Tester")
         title_font = QFont()
-        title_font.setPointSize(18)
+        title_font.setPointSize(14)
         title_font.setBold(True)
         title.setFont(title_font)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setMaximumHeight(30)
         layout.addWidget(title)
         
         # Version
         version_label = QLabel(f"Version {__version__}")
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        version_label.setMaximumHeight(20)
         layout.addWidget(version_label)
         
         # Description
         description = QTextBrowser()
         description.setReadOnly(True)
-        description.setMaximumHeight(200)
+        description.setMaximumHeight(350)
         description.setHtml("""
         <p><b>Modbus Master/Simulator Desktop Application</b></p>
         <p>A professional tool for testing Modbus RTU and TCP/IP connections.</p>
+                     
         <p><b>Features:</b></p>
         <ul>
             <li>Modbus RTU (RS-485/RS-232) and Modbus TCP/IP</li>
             <li>Multiple parallel sessions</li>
             <li>Read/write coils, discrete inputs, input registers and holding registers</li>
+            <li>Manual write operations</li>
+            <li>Tag management with data types and scaling</li>
+            <li>Device templates and CSV/Excel import/export</li>
+            <li>Device scanner (RTU and TCP)</li>
+            <li>Frame analyzer for diagnostics</li>
+            <li>Snapshots and comparison</li>
+            <li>Multi-view for simultaneous session monitoring</li>
             <li>Comprehensive debugging with hexdump and logging</li>
             <li>Real-time data display</li>
+            <li>Integrated Modbus simulator for testing</li>
         </ul>
+        
         <p><b>Technology:</b></p>
         <ul>
             <li>Python 3.10+</li>
@@ -61,6 +73,12 @@ class AboutDialog(QDialog):
             <li>pymodbus</li>
             <li>pyserial</li>
         </ul>
+        <p><b>Developed by:</b></p>
+        <ul>
+            <li>Jacob Manscher</li>
+            <li>Cursor (AI Assistant)</li>
+        </ul>
+        <p style="text-align: center; color: #888; font-size: 10pt;">© 2025 Jacob Manscher</p>
         """)
         layout.addWidget(description)
         

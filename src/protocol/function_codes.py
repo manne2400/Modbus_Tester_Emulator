@@ -1,5 +1,6 @@
 """Modbus function codes"""
 from enum import IntEnum
+from typing import Optional
 
 
 class FunctionCode(IntEnum):
@@ -45,3 +46,15 @@ def is_write_function(function_code: int) -> bool:
         FunctionCode.WRITE_MULTIPLE_COILS,
         FunctionCode.WRITE_MULTIPLE_REGISTERS
     ]
+
+
+def get_read_function_for_write(function_code: int) -> Optional[int]:
+    """Convert write function code to corresponding read function code for polling"""
+    """Returns None if function code is not a write operation"""
+    write_to_read_map = {
+        FunctionCode.WRITE_SINGLE_COIL: FunctionCode.READ_COILS,
+        FunctionCode.WRITE_SINGLE_REGISTER: FunctionCode.READ_HOLDING_REGISTERS,
+        FunctionCode.WRITE_MULTIPLE_COILS: FunctionCode.READ_COILS,
+        FunctionCode.WRITE_MULTIPLE_REGISTERS: FunctionCode.READ_HOLDING_REGISTERS,
+    }
+    return write_to_read_map.get(function_code)

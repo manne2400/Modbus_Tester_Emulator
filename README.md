@@ -7,7 +7,8 @@ A Modbus master/simulator desktop application for testing Modbus RTU (RS-485/RS-
 - **Modbus RTU (master)** via RS-485/RS-232
 - **Modbus TCP (client/master)**
 - **Multiple parallel sessions** with multi-view support
-- **Read/write coils, discrete inputs, input registers and holding registers**
+- **Read coils, discrete inputs, input registers and holding registers**
+- **Write values** via dedicated write dialog (function codes 05, 06, 0F, 10)
 - **Integrated Modbus Simulator** - Start TCP/RTU simulators directly from the app
 - **Device Scanner** - Automatically discover Modbus devices on RTU bus or TCP/IP network
   - **RTU Scanner** - Scan serial bus for device IDs and active registers
@@ -37,8 +38,8 @@ A Modbus master/simulator desktop application for testing Modbus RTU (RS-485/RS-
 - **Resizable Panels** - Adjustable splitter between Connections and Sessions
 - **Auto-save UI Settings** - Window position and panel sizes are saved automatically
 - **Comprehensive debugging**: hexdump, timestamps, log, status codes
-- **Real-time data display** in tables
-- **Manual write operations**
+- **Real-time data display** in tables with simultaneous view of raw addresses and tags
+- **Write operations** via "Skriv værdi..." button with support for single and multiple writes
 - **Project management** - Save and reopen configurations (including multi-view setup)
 
 ## Installation
@@ -80,8 +81,12 @@ This starts the RTU simulator on COM10 at 9600 baud.
 
 The simulator has the following test data:
 - **Holding registers (0-9)**: 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000
+- **Holding registers (20-31)**: DINT (INT32) test values (1,000,000, -500,000, MAX/MIN INT32, etc.)
+- **Holding registers (40-49)**: Dedicated write addresses (initialized to 0)
 - **Input registers (0-9)**: 50, 150, 250, 350, 450, 550, 650, 750, 850, 950
+- **Input registers (20-31)**: DINT (INT32) test values
 - **Coils (0-9)**: True, False, True, False, True, False, True, False, True, False
+- **Coils (20-29)**: Dedicated write addresses (initialized to False)
 - **Discrete inputs (0-9)**: False, True, False, True, False, True, False, True, False, True
 
 **Connection example:**
@@ -96,6 +101,7 @@ The simulator has the following test data:
    - Start address: `0`
    - Quantity: `10`
 5. Start polling to see the data
+6. (Optional) Click "Write Value..." to write values to addresses 40-49
 
 **Multi-view:**
 - Create groups via **View → Manage Multi-view...**
@@ -126,6 +132,8 @@ The simulator has the following test data:
 - Define custom tags with names, data types, byte order, scaling, and units
 - Supports: UINT16, INT16, UINT32, INT32 (DINT), FLOAT32, BOOL
 - Tags must match the session's function code (address_type)
+- Tags are displayed below raw addresses in the data table, separated by "--- Tags ---" line
+- You can see both raw addresses and decoded tags simultaneously
 
 **Device Templates & Tag Library:**
 - Go to **Session → Device Templates...** to manage template library
@@ -159,11 +167,20 @@ The simulator has the following test data:
   - Filter to show only changed values
   - Export diff to CSV for documentation
 
+**Write Operations:**
+- Click "Write Value..." button in session tab
+- Select write function code (05, 06, 0F, or 10)
+- Enter address and value(s)
+- For multiple writes: Enter comma-separated values or one large value (auto-split for multiple registers)
+- Data automatically refreshes after successful write
+- Function code dropdown only shows read functions (01-04) - write is done via the write button
+
 **User Interface:**
 - Dark theme for reduced eye strain
 - Resizable panels - drag the splitter between Connections and Sessions
 - Window position and panel sizes are automatically saved
 - HEX column shows hexadecimal representation of values
+- Data table shows raw addresses first, then tags (separated by "--- Tags ---" line)
 
 ## Build Executable (.exe)
 

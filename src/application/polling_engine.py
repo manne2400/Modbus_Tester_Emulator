@@ -97,23 +97,56 @@ class PollingEngine(QObject):
             
             start_time = time.time()
             
-            # Calculate required quantity to cover all tags
+            # Convert write function codes to read function codes for polling
+            # (We can't read with write function codes, but we can read the same addresses)
+            from src.models.tag_definition import AddressType
+            from src.protocol.function_codes import FunctionCode, get_read_function_for_write, is_write_function
+            
+            # Get the read function code (convert write codes if needed)
+            read_function_code = session.function_code
+            if is_write_function(session.function_code):
+                read_function_code = get_read_function_for_write(session.function_code)
+            
+            function_to_address_type = {
+                FunctionCode.READ_COILS: AddressType.COIL,
+                FunctionCode.READ_DISCRETE_INPUTS: AddressType.DISCRETE_INPUT,
+                FunctionCode.READ_HOLDING_REGISTERS: AddressType.HOLDING_REGISTER,
+                FunctionCode.READ_INPUT_REGISTERS: AddressType.INPUT_REGISTER,
+            }
+            
+            expected_address_type = function_to_address_type.get(read_function_code)
+            
+            # Calculate required quantity to cover both requested addresses AND tags
             # For tags with INT32/UINT32/FLOAT32, we need 2 registers per tag
             required_quantity = session.quantity
-            if session.tags:
-                max_tag_address = max(tag.address for tag in session.tags)
-                max_tag_end = max_tag_address
-                # Check if any tag needs 2 registers
-                for tag in session.tags:
-                    if tag.data_type in [DataType.UINT32, DataType.INT32, DataType.FLOAT32]:
-                        # Tag uses 2 registers, so end address is tag.address + 1
-                        max_tag_end = max(max_tag_end, tag.address + 1)
-                # Calculate quantity needed to cover all tags
-                required_quantity = max(required_quantity, max_tag_end - session.start_address + 1)
+            if session.tags and expected_address_type:
+                matching_tags = [tag for tag in session.tags 
+                                if tag.address_type == expected_address_type]
+                
+                if matching_tags:
+                    max_tag_address = max(tag.address for tag in matching_tags)
+                    max_tag_end = max_tag_address
+                    # Check if any tag needs 2 registers
+                    for tag in matching_tags:
+                        if tag.data_type in [DataType.UINT32, DataType.INT32, DataType.FLOAT32]:
+                            # Tag uses 2 registers, so end address is tag.address + 1
+                            max_tag_end = max(max_tag_end, tag.address + 1)
+                    # Calculate quantity needed to cover all matching tags
+                    if max_tag_end >= session.start_address:
+                        required_quantity = max(required_quantity, max_tag_end - session.start_address + 1)
+            
+            # Convert write function codes to read function codes for polling
+            # (We can't read with write function codes, but we can read the same addresses)
+            # Note: read_function_code is already calculated above
+            if is_write_function(session.function_code):
+                if not read_function_code:
+                    error_msg = f"Cannot poll with write function code {session.function_code:02X}"
+                    self.session_error.emit(session.name, error_msg)
+                    return
             
             # Execute read operation
             data, error = protocol.execute_read(
-                session.function_code,
+                read_function_code,
                 session.slave_id,
                 session.start_address,
                 required_quantity,
@@ -155,26 +188,41 @@ class PollingEngine(QObject):
                                 raw_data = list(data)
                             
                             # Decode values if tags are defined
-                            # Map function code to address type
-                            from src.models.tag_definition import AddressType
-                            from src.protocol.function_codes import FunctionCode
+                            # expected_address_type is already calculated above
                             
-                            function_to_address_type = {
-                                FunctionCode.READ_COILS: AddressType.COIL,
-                                FunctionCode.READ_DISCRETE_INPUTS: AddressType.DISCRETE_INPUT,
-                                FunctionCode.READ_HOLDING_REGISTERS: AddressType.HOLDING_REGISTER,
-                                FunctionCode.READ_INPUT_REGISTERS: AddressType.INPUT_REGISTER,
-                            }
+                            # Always show requested quantity of raw addresses first
+                            # (Even if we read more to cover tags, only show the requested range)
+                            for i in range(min(session.quantity, len(raw_data))):
+                                decoded_values.append({
+                                    "address": session.start_address + i,
+                                    "name": f"Address {session.start_address + i}",
+                                    "raw": raw_data[i],
+                                    "scaled": raw_data[i],
+                                    "unit": "",
+                                    "is_tag": False
+                                })
                             
-                            expected_address_type = function_to_address_type.get(session.function_code)
-                            
-                            # Filter tags that match the session's function code
+                            # Then show tags (if any) after all addresses
+                            # Show all matching tags that are within the read data range
                             matching_tags = []
                             if session.tags and expected_address_type:
                                 matching_tags = [tag for tag in session.tags 
-                                                if tag.address_type == expected_address_type]
+                                                if tag.address_type == expected_address_type
+                                                and tag.address >= session.start_address
+                                                and tag.address < session.start_address + len(raw_data)]
                             
                             if matching_tags:
+                                # Add separator row for tags section
+                                decoded_values.append({
+                                    "address": "",
+                                    "name": "--- Tags ---",
+                                    "raw": "",
+                                    "scaled": "",
+                                    "unit": "",
+                                    "is_tag": False,
+                                    "is_separator": True
+                                })
+                                
                                 # Use matching tags to decode values
                                 for tag in matching_tags:
                                     try:
@@ -194,11 +242,12 @@ class PollingEngine(QObject):
                                                     tag.scale_offset
                                                 )
                                                 decoded_values.append({
-                                                    "address": tag.address,
+                                                    "address": f"{tag.address}-{tag.address + 1}",
                                                     "name": tag.name,
                                                     "raw": decoded,
                                                     "scaled": scaled,
-                                                    "unit": tag.unit
+                                                    "unit": tag.unit,
+                                                    "is_tag": True
                                                 })
                                         else:
                                             # Single register types
@@ -220,20 +269,11 @@ class PollingEngine(QObject):
                                                     "name": tag.name,
                                                     "raw": decoded,
                                                     "scaled": scaled,
-                                                    "unit": tag.unit
+                                                    "unit": tag.unit,
+                                                    "is_tag": True
                                                 })
                                     except Exception as e:
                                         logger.error(f"Error decoding tag {tag.name}: {e}")
-                            else:
-                                # No matching tags, just use raw values
-                                for i, val in enumerate(raw_data):
-                                    decoded_values.append({
-                                        "address": session.start_address + i,
-                                        "name": f"Address {session.start_address + i}",
-                                        "raw": val,
-                                        "scaled": val,
-                                        "unit": ""
-                                    })
                 
                 result = PollResult(
                     timestamp=datetime.now(),
