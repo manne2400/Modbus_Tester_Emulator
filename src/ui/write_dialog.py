@@ -11,6 +11,9 @@ from src.models.tag_definition import AddressType
 class WriteDialog(QDialog):
     """Dialog for writing a single value to Modbus"""
     
+    # Class variable to store last address per function code
+    _last_addresses = {}  # function_code -> last_address
+    
     def __init__(self, parent, session_function_code: int, default_address: int = 0):
         """Initialize write dialog"""
         super().__init__(parent)
@@ -47,10 +50,14 @@ class WriteDialog(QDialog):
         self.function_combo.currentIndexChanged.connect(self._on_function_changed)
         form.addRow("Function Code:", self.function_combo)
         
-        # Address
+        # Address - use last address for this function code if available, otherwise use default_address
         self.address_spin = QSpinBox()
         self.address_spin.setRange(0, 65535)
-        self.address_spin.setValue(default_address)
+        initial_function_code = self.function_combo.currentData()
+        if initial_function_code in self._last_addresses:
+            self.address_spin.setValue(self._last_addresses[initial_function_code])
+        else:
+            self.address_spin.setValue(default_address)
         form.addRow("Address:", self.address_spin)
         
         # Value input (changes based on function code)
@@ -89,6 +96,10 @@ class WriteDialog(QDialog):
         """Update UI based on selected function code"""
         function_code = self.function_combo.currentData()
         
+        # Update address to last used address for this function code
+        if function_code in self._last_addresses:
+            self.address_spin.setValue(self._last_addresses[function_code])
+        
         if function_code in [FunctionCode.WRITE_SINGLE_COIL, FunctionCode.WRITE_SINGLE_REGISTER]:
             # Single write - hide quantity
             self.quantity_label.setVisible(False)
@@ -96,21 +107,24 @@ class WriteDialog(QDialog):
             
             if function_code == FunctionCode.WRITE_SINGLE_COIL:
                 self.value_input.setPlaceholderText("Enter 0 or 1 (False/True)")
-                self.value_input.setText("")
             else:  # WRITE_SINGLE_REGISTER
                 self.value_input.setPlaceholderText("Enter value (0-65535)")
-                self.value_input.setText("")
         else:
             # Multiple write - show quantity
             self.quantity_label.setVisible(True)
             self.quantity_spin.setVisible(True)
             
+            # Set quantity to 2 for function codes 10 and 0F
+            if function_code in [FunctionCode.WRITE_MULTIPLE_COILS, FunctionCode.WRITE_MULTIPLE_REGISTERS]:
+                self.quantity_spin.setValue(2)
+            
             if function_code == FunctionCode.WRITE_MULTIPLE_COILS:
                 self.value_input.setPlaceholderText("Enter values separated by comma (e.g. 1,0,1,0)")
-                self.value_input.setText("")
             else:  # WRITE_MULTIPLE_REGISTERS
                 self.value_input.setPlaceholderText("Enter values separated by comma (e.g. 100,200) or one large value")
-                self.value_input.setText("")
+        
+        # Clear value input when function code changes
+        self.value_input.setText("")
     
     def get_write_params(self):
         """Get write parameters"""
@@ -205,6 +219,9 @@ class WriteDialog(QDialog):
         if error:
             QMessageBox.warning(self, "Invalid Value", error)
             return
+        
+        # Save the address for this function code
+        self._last_addresses[function_code] = address
         
         super().accept()
 

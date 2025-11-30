@@ -16,6 +16,14 @@ A Modbus master/simulator desktop application for testing Modbus RTU (RS-485/RS-
   - **Export to PDF** - Save device information as PDF for documentation
   - **Import Connection/Session** - Right-click on found devices to automatically import them
 - **Multi-view** - View multiple sessions side-by-side in groups
+- **Graph - Data Visualization** - Real-time time-series graphs of Modbus data
+  - **Select rows to graph** - Choose one or more data points from the table to visualize
+  - **Real-time updates** - Graph automatically updates with new poll results
+  - **Hover tooltip** - See exact time and value by hovering over data points
+  - **Adjustable axes** - Auto-scale or manual min/max for both time and value axes
+  - **Update frequency control** - Adjust how often the graph refreshes (1-100 polls)
+  - **Multiple series** - Each selected row appears as a separate colored line
+  - **Non-modal window** - Use the main window while viewing graphs
 - **Tag Management** - Define custom tags with data types, scaling, and units
 - **Device Templates & Tag Library** - Reusable tag sets for standard equipment (VAV boxes, pumps, VFDs, etc.)
   - **Save tags as template** - Create reusable templates from session tags
@@ -58,7 +66,7 @@ python src/main.py
 
 ### Modbus Simulator (for testing)
 
-**Recommended:** Use the integrated simulator in the app via **View → Modbus Simulator...**
+**Recommended:** Use the integrated simulator in the app via **Advanced → Modbus Simulator...**
 
 Alternatively, you can run the simulator from the command line:
 
@@ -91,7 +99,7 @@ The simulator has the following test data:
 
 **Connection example:**
 1. Start the application: `python src/main.py`
-2. Start the simulator via **View → Modbus Simulator...** → Start TCP Simulator (port 5020)
+2. Start the simulator via **Advanced → Modbus Simulator...** → Start TCP Simulator (port 5020)
 3. Create a new TCP connection with:
    - Host: `127.0.0.1`
    - Port: `5020`
@@ -102,6 +110,14 @@ The simulator has the following test data:
    - Quantity: `10`
 5. Start polling to see the data
 6. (Optional) Click "Write Value..." to write values to addresses 40-49
+
+**Graph:**
+- Select one or more rows in the data table
+- Click **"Show Graph..."** button in the session tab
+- View real-time time-series visualization of your data
+- Hover over the graph to see exact time and value
+- Adjust X/Y axis settings and update frequency in the control panel
+- Graph window is non-modal - use main window while viewing graphs
 
 **Multi-view:**
 - Create groups via **View → Manage Multi-view...**
@@ -143,7 +159,7 @@ The simulator has the following test data:
 - Templates are perfect for standard equipment (VAV boxes, pumps, VFDs, ventilation units, etc.)
 
 **Frame/Trace Analyzer:**
-- Go to **View → Frame Analyzer...** to open the analyzer
+- Go to **Advanced → Frame Analyzer...** to open the analyzer
 - View all Modbus communication frames in a table with:
   - Timestamp, direction (TX/RX), slave ID, function code, address range, result, response time
 - Click on a frame to see detailed information:

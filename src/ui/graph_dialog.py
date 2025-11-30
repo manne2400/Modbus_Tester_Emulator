@@ -199,6 +199,9 @@ class GraphDialog(QDialog):
         # Hover annotation for showing time and value
         self.hover_annotation = None
         self.first_timestamp = None  # Store first timestamp for conversion
+        self.last_mouse_x = None  # Store last mouse x position in data coordinates
+        self.last_mouse_y = None  # Store last mouse y position in data coordinates
+        self.last_hover_data = None  # Store last hover data (time, value, label, x, y)
         
         # Connect mouse events for hover functionality
         self.canvas.mpl_connect('motion_notify_event', self._on_mouse_move)
@@ -315,8 +318,14 @@ class GraphDialog(QDialog):
     
     def _update_graph(self):
         """Update the graph with current data"""
-        # Remove hover annotation before clearing
-        self._hide_hover_annotation()
+        # Store hover annotation state before clearing
+        hover_was_visible = self.hover_annotation is not None
+        saved_hover_data = self.last_hover_data
+        
+        # Remove hover annotation before clearing (but don't reset last_hover_data)
+        if self.hover_annotation:
+            self.hover_annotation.remove()
+            self.hover_annotation = None
         
         self.ax.clear()
         self.ax.set_facecolor('#1e1e1e')
@@ -376,9 +385,17 @@ class GraphDialog(QDialog):
                     x_max = latest_relative
                     self.ax.set_xlim(x_min, x_max)
             else:
-                # Manual X limits (in seconds)
-                if self.x_min_time is not None and self.x_max_time is not None:
-                    self.ax.set_xlim(self.x_min_time, self.x_max_time)
+                # Show all data (full range)
+                if len(all_timestamps) > 0:
+                    x_min = min(all_timestamps)
+                    x_max = max(all_timestamps)
+                    # Add small padding
+                    x_range = x_max - x_min
+                    if x_range > 0:
+                        padding = x_range * 0.02
+                        self.ax.set_xlim(x_min - padding, x_max + padding)
+                    else:
+                        self.ax.set_xlim(x_min - 1, x_max + 1)
             
             if self.y_auto_scale:
                 if all_values:
@@ -405,6 +422,13 @@ class GraphDialog(QDialog):
         self.ax.set_xlabel("Time (seconds)")
         
         self.canvas.draw()
+        
+        # Restore hover annotation if it was visible before update
+        # Recalculate nearest point to get updated values
+        if hover_was_visible and self.last_mouse_x is not None and self.last_mouse_y is not None:
+            # Manually recalculate hover instead of creating mock event
+            # (MouseEvent constructor doesn't accept xdata/ydata directly)
+            self._recalculate_hover(self.last_mouse_x, self.last_mouse_y)
     
     def _on_mouse_move(self, event):
         """Handle mouse movement over the graph"""
@@ -412,6 +436,15 @@ class GraphDialog(QDialog):
             self._hide_hover_annotation()
             return
         
+        # Store mouse position for later use (for restoring after graph update)
+        self.last_mouse_x = event.xdata
+        self.last_mouse_y = event.ydata
+        
+        # Recalculate hover
+        self._recalculate_hover(event.xdata, event.ydata)
+    
+    def _recalculate_hover(self, mouse_x, mouse_y):
+        """Recalculate and show hover annotation for given mouse coordinates"""
         # Find the nearest data point to the mouse position
         min_distance = float('inf')
         nearest_time = None
@@ -444,8 +477,8 @@ class GraphDialog(QDialog):
             # Find nearest point in this line
             for i, (rel_time, value) in enumerate(zip(relative_times, values)):
                 # Calculate normalized distance from mouse to this point
-                dx = (event.xdata - rel_time) / x_range
-                dy = (event.ydata - value) / y_range
+                dx = (mouse_x - rel_time) / x_range
+                dy = (mouse_y - value) / y_range
                 distance = (dx**2 + dy**2)**0.5
                 
                 if distance < min_distance:
@@ -474,13 +507,27 @@ class GraphDialog(QDialog):
             # Create annotation text
             annotation_text = f"{nearest_label}\nTime: {time_str}\nValue: {value_str}"
             
+            # Store hover data for restoration after graph update
+            self.last_hover_data = {
+                'x': nearest_x,
+                'y': nearest_y,
+                'text': annotation_text,
+                'time': nearest_time,
+                'value': nearest_value,
+                'label': nearest_label
+            }
+            
             # Show annotation at the data point position (not mouse position)
             self._show_hover_annotation(nearest_x, nearest_y, annotation_text)
         else:
+            self.last_hover_data = None
             self._hide_hover_annotation()
     
     def _on_axes_leave(self, event):
         """Handle mouse leaving the axes"""
+        self.last_mouse_x = None
+        self.last_mouse_y = None
+        self.last_hover_data = None
         self._hide_hover_annotation()
     
     def _show_hover_annotation(self, x, y, text):

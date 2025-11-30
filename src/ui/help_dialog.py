@@ -106,6 +106,7 @@ class HelpDialog(QDialog):
         
         # Advanced Features
         advanced = QTreeWidgetItem(self.nav_tree, ["Advanced Features"])
+        QTreeWidgetItem(advanced, ["Graph"])
         QTreeWidgetItem(advanced, ["Frame Analyzer"])
         QTreeWidgetItem(advanced, ["Snapshots & Compare"])
         QTreeWidgetItem(advanced, ["Multi-view"])
@@ -175,6 +176,7 @@ class HelpDialog(QDialog):
             ("Data Types", "Function Codes"): self._get_function_data_types(),
             
             # Advanced Features
+            ("Graph", "Advanced Features"): self._get_graph(),
             ("Frame Analyzer", "Advanced Features"): self._get_frame_analyzer(),
             ("Snapshots & Compare", "Advanced Features"): self._get_snapshots_compare(),
             ("Multi-view", "Advanced Features"): self._get_multi_view(),
@@ -204,7 +206,7 @@ class HelpDialog(QDialog):
         <h3>1. Start a simulator (optional - for testing)</h3>
         <p>To test the application, you can start a simulated Modbus server directly from the app:</p>
         <ul>
-            <li>Go to <b>View → Modbus Simulator...</b></li>
+            <li>Go to <b>Advanced → Modbus Simulator...</b></li>
             <li>Select <b>TCP</b> or <b>RTU</b> tab</li>
             <li>Configure the settings (port, baudrate, etc.)</li>
             <li>Click <b>"Start TCP Simulator"</b> or <b>"Start RTU Simulator"</b></li>
@@ -408,7 +410,7 @@ class HelpDialog(QDialog):
         <h3>7. Frame Analyzer (optional - for diagnostics)</h3>
         <p>To analyze Modbus communication and diagnose issues:</p>
         <ul>
-            <li>Go to <b>View → Frame Analyzer...</b></li>
+            <li>Go to <b>Advanced → Frame Analyzer...</b></li>
             <li>The analyzer shows all TX/RX frames in a table with timestamps, direction, slave ID, function codes, and results</li>
             <li>Click on a frame to see detailed information (raw hex, decoded info, error descriptions)</li>
             <li><b>Statistics tab:</b> View aggregated statistics:
@@ -932,13 +934,81 @@ class HelpDialog(QDialog):
         <p><b>Important:</b> Multi-register types (INT32, UINT32, FLOAT32) use 2 registers. Make sure to read enough registers!</p>
         """
     
+    def _get_graph(self):
+        """Get graph content"""
+        return """
+        <h2>Graph - Data Visualization</h2>
+        <p>The Graph feature allows you to visualize Modbus data over time in a real-time time-series graph.</p>
+        
+        <h3>Opening a Graph</h3>
+        <ul>
+            <li>In a session tab, select one or more rows in the data table</li>
+            <li>Click the <b>"Show Graph..."</b> button</li>
+            <li>A new graph window will open showing the selected data points</li>
+        </ul>
+        
+        <h3>Graph Features</h3>
+        <ul>
+            <li><b>Real-time Updates:</b> The graph automatically updates when new poll results arrive</li>
+            <li><b>Multiple Data Series:</b> Each selected row appears as a separate line with a unique color</li>
+            <li><b>Hover Tooltip:</b> Move your mouse over the graph to see exact time and value for the nearest data point</li>
+            <li><b>Persistent Tooltip:</b> The tooltip remains visible when the graph updates, making it easy to read values</li>
+        </ul>
+        
+        <h3>Control Panel</h3>
+        <p>The left panel provides controls for customizing the graph:</p>
+        
+        <h4>Tracked Rows</h4>
+        <ul>
+            <li>Shows a list of all data points currently being plotted</li>
+            <li>Each entry shows the address, name, and unit (if applicable)</li>
+        </ul>
+        
+        <h4>X-Axis (Time)</h4>
+        <ul>
+            <li><b>Auto-scale:</b> When checked, shows a sliding time window (default: last 60 seconds)</li>
+            <li><b>Window:</b> Adjust the time window size (10-3600 seconds) when auto-scale is enabled</li>
+            <li>When auto-scale is unchecked, shows the full time range of all collected data</li>
+        </ul>
+        
+        <h4>Y-Axis (Value)</h4>
+        <ul>
+            <li><b>Auto-scale:</b> When checked, automatically adjusts Y-axis to fit all values with padding</li>
+            <li><b>Min/Max:</b> When auto-scale is unchecked, manually set the Y-axis limits</li>
+            <li>Min/Max fields are automatically populated with current data range when you disable auto-scale</li>
+        </ul>
+        
+        <h4>Update Frequency</h4>
+        <ul>
+            <li><b>Update every:</b> Control how often the graph refreshes (1-100 polls)</li>
+            <li>Setting to 1 means the graph updates with every poll (most responsive)</li>
+            <li>Higher values reduce CPU usage but make the graph less responsive</li>
+            <li>Data is still collected at every poll, only the display update frequency changes</li>
+        </ul>
+        
+        <h3>Buttons</h3>
+        <ul>
+            <li><b>Clear History:</b> Clears all collected data history while keeping the tracked rows</li>
+            <li><b>Close:</b> Closes the graph window (data history is preserved if you reopen the graph)</li>
+        </ul>
+        
+        <h3>Tips</h3>
+        <ul>
+            <li>Select multiple rows to compare different data points side-by-side</li>
+            <li>Use the hover tooltip to get precise values without needing to read from the axes</li>
+            <li>Adjust the update frequency if the graph feels too "jumpy" or if you want to reduce CPU usage</li>
+            <li>The graph window is non-modal, so you can continue using the main window while viewing the graph</li>
+            <li>Each function code remembers its last used address in the write dialog</li>
+        </ul>
+        """
+    
     def _get_frame_analyzer(self):
         """Get frame analyzer content"""
         return """
         <h2>Frame Analyzer</h2>
         <p>To analyze Modbus communication and diagnose issues:</p>
         <ul>
-            <li>Go to <b>View → Frame Analyzer...</b></li>
+            <li>Go to <b>Advanced → Frame Analyzer...</b></li>
             <li>The analyzer shows all TX/RX frames in a table with timestamps, direction, slave ID, function codes, and results</li>
             <li>Click on a frame to see detailed information (raw hex, decoded info, error descriptions)</li>
             <li><b>Statistics tab:</b> View aggregated statistics:
@@ -1054,7 +1124,7 @@ class HelpDialog(QDialog):
             <li>Check that baudrate, parity, stop bits match the device</li>
             <li>Try restarting the computer if the port is locked</li>
             <li><b>For simulator:</b> You must first create a COM port pair with a serial port emulator (e.g. com0com)</li>
-        </ul>
+                </ul>
         <p><b>Code 52 error (com0com):</b></p>
         <ul>
             <li>This happens when Windows cannot verify the driver signature</li>
@@ -1063,7 +1133,7 @@ class HelpDialog(QDialog):
             <li><b>Solution 3:</b> Test with physical RTU equipment instead of simulator</li>
         </ul>
         """
-    
+        
     def _get_simulator_problems(self):
         """Get simulator problems content"""
         return """
@@ -1083,7 +1153,7 @@ class HelpDialog(QDialog):
             <li>Check that Slave ID matches (default is 1)</li>
         </ul>
         """
-    
+        
     def _get_polling_problems(self):
         """Get polling problems content"""
         return """
@@ -1104,7 +1174,7 @@ class HelpDialog(QDialog):
             <li>Server error (exception code 04)</li>
         </ul>
         """
-    
+        
     def _get_tag_problems(self):
         """Get tag problems content"""
         return """
