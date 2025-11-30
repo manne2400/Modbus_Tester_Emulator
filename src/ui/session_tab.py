@@ -15,6 +15,7 @@ from src.ui.data_table import DataTable
 from src.ui.widgets.status_bar import StatusBar
 from src.ui.tag_dialog import TagDialog
 from src.ui.write_dialog import WriteDialog
+from src.ui.graph_dialog import GraphDialog
 from src.models.tag_definition import TagDefinition, AddressType
 from src.storage.template_library import TemplateLibrary
 from src.models.device_template import DeviceTemplate
@@ -46,6 +47,9 @@ class SessionTab(QWidget):
         self.polling_engine = polling_engine
         self.config_manager = config_manager
         self.template_library = template_library or TemplateLibrary()
+        
+        # Graph dialog (created on demand)
+        self.graph_dialog: Optional[GraphDialog] = None
         
         self._setup_ui()
         self.update_status()
@@ -177,9 +181,12 @@ class SessionTab(QWidget):
         controls_widget.setMaximumHeight(150)
         layout.addWidget(controls_widget)
         
-        # Tags and Write buttons
+        # Tags, Write, and Graph buttons
         tags_layout = QHBoxLayout()
         tags_layout.addStretch()
+        self.graph_btn = QPushButton("Show Graph...")
+        self.graph_btn.clicked.connect(self._show_graph)
+        tags_layout.addWidget(self.graph_btn)
         self.write_btn = QPushButton("Write Value...")
         self.write_btn.clicked.connect(self._write_value)
         tags_layout.addWidget(self.write_btn)
@@ -545,6 +552,11 @@ class SessionTab(QWidget):
     def update_data(self, result: PollResult):
         """Update data table with poll result"""
         self.data_table.update_data(result)
+        
+        # Update graph dialog if open
+        if self.graph_dialog and self.graph_dialog.isVisible():
+            self.graph_dialog.add_data_point(result)
+        
         if result.status.value == "OK":
             self.status_bar.update_status(
                 f"OK - {result.response_time_ms:.1f}ms" if result.response_time_ms else "OK",
@@ -559,6 +571,32 @@ class SessionTab(QWidget):
     def show_error(self, error_message: str):
         """Show error message"""
         self.status_bar.update_status(error_message, error=True)
+    
+    def _show_graph(self):
+        """Show graph dialog with selected rows"""
+        # Get selected rows from data table
+        selected_rows = self.data_table.get_selected_rows_data()
+        
+        if not selected_rows:
+            QMessageBox.warning(
+                self,
+                "No Selection",
+                "Please select one or more rows in the data table to graph."
+            )
+            return
+        
+        # Create or show graph dialog
+        if self.graph_dialog is None:
+            self.graph_dialog = GraphDialog(self, self.session.name)
+            self.graph_dialog.setModal(False)  # Non-modal so main window can be used
+        
+        # Set tracked rows
+        self.graph_dialog.set_tracked_rows(selected_rows)
+        
+        # Show dialog
+        self.graph_dialog.show()
+        self.graph_dialog.raise_()
+        self.graph_dialog.activateWindow()
     
     def _write_value(self):
         """Open write dialog and write value"""

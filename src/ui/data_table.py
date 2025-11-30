@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor
 from src.models.poll_result import PollResult
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 class DataTable(QTableWidget):
@@ -133,3 +133,84 @@ class DataTable(QTableWidget):
                 self.setItem(row, 6, status_item)
         
         self.resizeColumnsToContents()
+    
+    def get_selected_rows_data(self) -> List[Dict[str, Any]]:
+        """Get data for currently selected rows
+        
+        Returns:
+            List of dicts with keys: address, name, raw, scaled, unit, is_tag, is_separator
+        """
+        selected_rows = []
+        selected_items = self.selectedItems()
+        
+        # Get unique row indices
+        selected_row_indices = set()
+        for item in selected_items:
+            selected_row_indices.add(item.row())
+        
+        # Extract data for each selected row
+        for row_index in sorted(selected_row_indices):
+            if row_index >= self.rowCount():
+                continue
+            
+            # Get data from each column
+            address_item = self.item(row_index, 0)
+            name_item = self.item(row_index, 1)
+            raw_item = self.item(row_index, 2)
+            scaled_item = self.item(row_index, 4)
+            unit_item = self.item(row_index, 5)
+            
+            if address_item is None or name_item is None:
+                continue
+            
+            address = address_item.text()
+            name = name_item.text()
+            
+            # Skip separator rows
+            if name == "--- Tags ---" or address == "":
+                continue
+            
+            # Get raw value
+            raw_value = ""
+            if raw_item:
+                raw_text = raw_item.text()
+                try:
+                    # Try to parse as number
+                    if '.' in raw_text:
+                        raw_value = float(raw_text)
+                    else:
+                        raw_value = int(raw_text)
+                except ValueError:
+                    raw_value = raw_text
+            
+            # Get scaled value
+            scaled_value = ""
+            if scaled_item:
+                scaled_text = scaled_item.text()
+                try:
+                    scaled_value = float(scaled_text)
+                except ValueError:
+                    scaled_value = scaled_text
+            
+            # Get unit
+            unit = ""
+            if unit_item:
+                unit = unit_item.text()
+            
+            # Check if it's a tag (bold name)
+            is_tag = False
+            if name_item.font().bold():
+                is_tag = True
+            
+            row_data = {
+                "address": address,
+                "name": name,
+                "raw": raw_value,
+                "scaled": scaled_value,
+                "unit": unit,
+                "is_tag": is_tag,
+                "is_separator": False
+            }
+            selected_rows.append(row_data)
+        
+        return selected_rows
