@@ -46,6 +46,10 @@ class GraphDialog(QDialog):
         self.y_max_value = None  # float or None
         self.x_window_seconds = 60  # Default: show last 60 seconds
         
+        # Update frequency settings
+        self.update_every_n_polls = 1  # Update on every poll by default
+        self.poll_counter = 0  # Counter for tracking polls
+        
         # Setup UI
         self._setup_ui()
         
@@ -136,6 +140,22 @@ class GraphDialog(QDialog):
         y_axis_group.setLayout(y_axis_layout)
         controls_layout.addWidget(y_axis_group)
         
+        # Update frequency settings
+        update_group = QGroupBox("Update Frequency")
+        update_layout = QFormLayout()
+        update_layout.setSpacing(Theme.SPACING_FORM)
+        
+        self.update_frequency_spin = QSpinBox()
+        self.update_frequency_spin.setRange(1, 100)
+        self.update_frequency_spin.setValue(1)
+        self.update_frequency_spin.setSuffix(" poll(s)")
+        self.update_frequency_spin.setToolTip("Update graph every N polls (1 = update on every poll)")
+        self.update_frequency_spin.valueChanged.connect(self._on_update_frequency_changed)
+        update_layout.addRow("Update every:", self.update_frequency_spin)
+        
+        update_group.setLayout(update_layout)
+        controls_layout.addWidget(update_group)
+        
         # Buttons
         buttons_layout = QVBoxLayout()
         buttons_layout.setSpacing(Theme.SPACING_COMPACT)
@@ -175,6 +195,14 @@ class GraphDialog(QDialog):
         self.ax.set_ylabel("Scaled Value")
         self.ax.set_title("Modbus Data Over Time")
         self.ax.grid(True, alpha=0.3, color='#3e3e42')
+        
+        # Hover annotation for showing time and value
+        self.hover_annotation = None
+        self.first_timestamp = None  # Store first timestamp for conversion
+        
+        # Connect mouse events for hover functionality
+        self.canvas.mpl_connect('motion_notify_event', self._on_mouse_move)
+        self.canvas.mpl_connect('axes_leave_event', self._on_axes_leave)
         
         graph_layout.addWidget(self.canvas)
         splitter.addWidget(graph_widget)
@@ -245,6 +273,9 @@ class GraphDialog(QDialog):
         if poll_result.status.value != "OK":
             return  # Only plot successful polls
         
+        # Increment poll counter
+        self.poll_counter += 1
+        
         # Extract data for each tracked row
         for row_key, tracked_info in self.tracked_rows.items():
             address = tracked_info["address"]
@@ -277,11 +308,16 @@ class GraphDialog(QDialog):
                 self.data_history[row_key]["timestamps"].append(timestamp)
                 self.data_history[row_key]["values"].append(matching_value)
         
-        # Update graph
-        self._update_graph()
+        # Update graph only if we've reached the update frequency threshold
+        if self.poll_counter >= self.update_every_n_polls:
+            self._update_graph()
+            self.poll_counter = 0  # Reset counter
     
     def _update_graph(self):
         """Update the graph with current data"""
+        # Remove hover annotation before clearing
+        self._hide_hover_annotation()
+        
         self.ax.clear()
         self.ax.set_facecolor('#1e1e1e')
         self.ax.tick_params(colors='#cccccc')
@@ -308,6 +344,9 @@ class GraphDialog(QDialog):
                 for ts in history["timestamps"]:
                     if first_timestamp is None or ts < first_timestamp:
                         first_timestamp = ts
+        
+        # Store first timestamp for hover conversion
+        self.first_timestamp = first_timestamp
         
         # Plot each tracked row
         for row_key, history in self.data_history.items():
@@ -367,6 +406,111 @@ class GraphDialog(QDialog):
         
         self.canvas.draw()
     
+    def _on_mouse_move(self, event):
+        """Handle mouse movement over the graph"""
+        if event.inaxes != self.ax or event.xdata is None or event.ydata is None:
+            self._hide_hover_annotation()
+            return
+        
+        # Find the nearest data point to the mouse position
+        min_distance = float('inf')
+        nearest_time = None
+        nearest_value = None
+        nearest_label = None
+        nearest_x = None
+        nearest_y = None
+        
+        if not self.first_timestamp:
+            return
+        
+        # Get axis limits to calculate normalized distance
+        xlim = self.ax.get_xlim()
+        ylim = self.ax.get_ylim()
+        x_range = xlim[1] - xlim[0]
+        y_range = ylim[1] - ylim[0]
+        
+        # Check all plotted lines
+        for row_key, history in self.data_history.items():
+            if not history["timestamps"] or not history["values"]:
+                continue
+            
+            timestamps = history["timestamps"]
+            values = history["values"]
+            label = history["label"]
+            
+            # Convert timestamps to relative time
+            relative_times = [(t - self.first_timestamp).total_seconds() for t in timestamps]
+            
+            # Find nearest point in this line
+            for i, (rel_time, value) in enumerate(zip(relative_times, values)):
+                # Calculate normalized distance from mouse to this point
+                dx = (event.xdata - rel_time) / x_range
+                dy = (event.ydata - value) / y_range
+                distance = (dx**2 + dy**2)**0.5
+                
+                if distance < min_distance:
+                    min_distance = distance
+                    nearest_time = timestamps[i]  # Store original timestamp
+                    nearest_value = value
+                    nearest_label = label
+                    nearest_x = rel_time
+                    nearest_y = value
+        
+        # Show annotation if we found a nearby point (within reasonable normalized distance)
+        # Threshold of 0.05 means 5% of the plot size
+        if nearest_time is not None and min_distance < 0.05:
+            # Format time
+            if isinstance(nearest_time, datetime):
+                time_str = nearest_time.strftime("%H:%M:%S.%f")[:-3]
+            else:
+                time_str = str(nearest_time)
+            
+            # Format value
+            if isinstance(nearest_value, float):
+                value_str = f"{nearest_value:.2f}"
+            else:
+                value_str = str(nearest_value)
+            
+            # Create annotation text
+            annotation_text = f"{nearest_label}\nTime: {time_str}\nValue: {value_str}"
+            
+            # Show annotation at the data point position (not mouse position)
+            self._show_hover_annotation(nearest_x, nearest_y, annotation_text)
+        else:
+            self._hide_hover_annotation()
+    
+    def _on_axes_leave(self, event):
+        """Handle mouse leaving the axes"""
+        self._hide_hover_annotation()
+    
+    def _show_hover_annotation(self, x, y, text):
+        """Show hover annotation at the specified position"""
+        # Remove existing annotation
+        if self.hover_annotation:
+            self.hover_annotation.remove()
+        
+        # Create new annotation
+        self.hover_annotation = self.ax.annotate(
+            text,
+            xy=(x, y),
+            xytext=(10, 10),
+            textcoords='offset points',
+            bbox=dict(boxstyle='round,pad=0.5', facecolor='#252526', edgecolor='#3e3e42', alpha=0.9),
+            arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0', color='#cccccc'),
+            fontsize=9,
+            color='#cccccc',
+            zorder=100
+        )
+        
+        self.canvas.draw_idle()
+    
+    def _hide_hover_annotation(self):
+        """Hide hover annotation"""
+        if self.hover_annotation:
+            self.hover_annotation.remove()
+            self.hover_annotation = None
+            self.canvas.draw_idle()
+    
     def _on_x_auto_changed(self, checked: bool):
         """Handle X-axis auto-scale checkbox change"""
         self.x_auto_scale = checked
@@ -400,6 +544,14 @@ class GraphDialog(QDialog):
             self.y_min_value = self.y_min_spin.value()
             self.y_max_value = self.y_max_spin.value()
             self._update_graph()
+    
+    def _on_update_frequency_changed(self, value: int):
+        """Handle update frequency change"""
+        self.update_every_n_polls = value
+        # Reset counter so next update happens according to new frequency
+        self.poll_counter = 0
+        # Update graph immediately to show current data
+        self._update_graph()
     
     def _clear_history(self):
         """Clear all data history"""
